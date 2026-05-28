@@ -69,6 +69,7 @@ class HomeScreen extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
         ],
       ),
+      bottomNavigationBar: const AppNavigationBar(),
     );
   }
 }
@@ -95,12 +96,12 @@ const recCards = [
 ];
 
 const matchCards = [
-   AppCard(title: 'Music', subtitle: 'Tap to play', icon: Icons.person, color: Colors.orange),
-   AppCard(title: 'Photos', subtitle: 'View gallery', icon: Icons.person, color: Colors.orange),
-   AppCard(title: 'Maps', subtitle: 'Explore places', icon: Icons.person, color: Colors.orange),
-   AppCard(title: 'Settings', subtitle: 'Customize app', icon: Icons.person, color: Colors.orange),
-   AppCard(title: 'Profile', subtitle: 'Your account', icon: Icons.person, color: Colors.orange),
-   AppCard(title: 'Stats', subtitle: 'View analytics', icon: Icons.person, color: Colors.orange),
+   AppCard(title: 'Jeremy', subtitle: 'KCL History', icon: Icons.person, color: Colors.pinkAccent),
+   AppCard(title: 'Emily', subtitle: 'LSE Economics', icon: Icons.person, color: Colors.pinkAccent),
+   AppCard(title: 'Carl', subtitle: 'Imperial Physics', icon: Icons.person, color: Colors.pinkAccent),
+   AppCard(title: 'Anne', subtitle: 'UCL Psychology', icon: Icons.person, color: Colors.pinkAccent),
+   AppCard(title: 'Geoffrey', subtitle: 'Royal Holloway Law', icon: Icons.person, color: Colors.pinkAccent),
+   AppCard(title: 'Zenaidah', subtitle: 'Queen Mary Medicine', icon: Icons.person, color: Colors.pinkAccent),
 ];
 
 class InteractiveCard extends StatelessWidget {
@@ -110,7 +111,10 @@ class InteractiveCard extends StatelessWidget {
     
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child:
+    Material(
       color: card.color,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
@@ -143,6 +147,26 @@ class InteractiveCard extends StatelessWidget {
           ),
         ),
       ),
+    )
+    );
+  }
+}
+
+class AppNavigationBar extends StatelessWidget {
+  const AppNavigationBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+        BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Messages'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+      ],
+      currentIndex: 0,
+      onTap: (index) {}, // handle navigation
     );
   }
 }
