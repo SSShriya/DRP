@@ -26,12 +26,13 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Text(
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Text(
               'Recommended Events',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
@@ -53,26 +54,41 @@ class HomeScreen extends StatelessWidget {
               'Matches',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
+          ),        
+          MatchRow(
+            cards: matchCards.sublist(0, 3),
+            eventLabel: 'Choir Concert - Music Society',
+            onTap: (index) => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => UserProfileScreen(
+                name: matchCards[index].title,
+                university: matchCards[index].subtitle,
+                course: matchCards[index].course,
+                bio: matchCards[index].bio,
+                event: matchCards[index].event,
+              )),
+            ),
           ),
-          SizedBox(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: matchCards.length,
-              itemBuilder: (context, index) {
-                return InteractiveCard(card: matchCards[index], onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => UserProfileScreen(name: matchCards[index].title, university: matchCards[index].subtitle, course: matchCards[index].course, bio: matchCards[index].bio, event: matchCards[index].event)),
-                  );
-                });
-              },
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
+            MatchRow(
+            cards: matchCards.sublist(3, 6),
+            eventLabel: 'Taster Session - Improv Society',
+            onTap: (index) => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => UserProfileScreen(
+                name: matchCards[index].title,
+                university: matchCards[index].subtitle,
+                course: matchCards[index].course,
+                bio: matchCards[index].bio,
+                event: matchCards[index].event,
+              )),
             ),
           ),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
         ],
+      ),
       ),
       bottomNavigationBar: const AppNavigationBar(),
     );
@@ -280,6 +296,41 @@ class UserProfileScreen extends StatelessWidget {
     ],
   ),
 ),
+    );
+  }
+}
+
+class MatchRow extends StatelessWidget {
+  final List<AppCard> cards;
+  final String eventLabel;
+  final void Function(int index) onTap;
+
+  const MatchRow({super.key, required this.cards, required this.eventLabel, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 4, 16),
+            child: Text(
+              eventLabel,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ),  
+    SizedBox(
+      height: 180,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: cards.length,
+        itemBuilder: (context, index) {
+          return InteractiveCard(card: cards[index], onTap: () => onTap(index));
+        },
+      ),
+    )
+      ]
     );
   }
 }
