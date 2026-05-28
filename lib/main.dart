@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-const _supabaseUrl = 'https://fvxsvmpocsmhyhimollx.supabase.co';
-const _supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2eHN2bXBvY3NtaHloaW1vbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NjYxMTAsImV4cCI6MjA5NTU0MjExMH0.2gIPw5mBVPMFvxIeWAKb6XRqrr4i_eSS-p8CqY_s16Y';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.immersiveSticky,
+  await dotenv.load(fileName: ".env");
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-  await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+
   runApp(const MainApp());
 }
 
@@ -20,8 +21,10 @@ final supabase = Supabase.instance.client;
 
 class MatchCard extends BaseCard {
   final String id; // from Supabase
-  @override final String title;
-  @override final String subtitle;
+  @override
+  final String title;
+  @override
+  final String subtitle;
   final String course;
   final String bio;
   final String event;
@@ -38,19 +41,21 @@ class MatchCard extends BaseCard {
   });
 
   factory MatchCard.fromJson(Map<String, dynamic> json) => MatchCard(
-        id: json['id'],
-        title: json['name'],
-        subtitle: json['university'],
-        course: json['course'],
-        bio: json['bio'],
-        event: json['event'],
-        group: json['event_group'],
-      );
+    id: json['id'],
+    title: json['name'],
+    subtitle: json['university'],
+    course: json['course'],
+    bio: json['bio'],
+    event: json['event'],
+    group: json['event_group'],
+  );
 
   // So InteractiveCard still works
   String get name => title;
-  @override IconData get icon => Icons.person;
-  @override Color get color => const Color(0XFFEEC0C6);
+  @override
+  IconData get icon => Icons.person;
+  @override
+  Color get color => const Color(0XFFEEC0C6);
 }
 
 // -- Supabase service --
@@ -60,9 +65,9 @@ class MatchService {
     // Get IDs of already-decided matches
     final decided = await supabase.from('decisions').select('match_id');
     final decidedIds = (decided as List)
-      .map((d) => d['match_id'] as String?)
-      .whereType<String>()  // filters out nulls
-      .toList();
+        .map((d) => d['match_id'] as String?)
+        .whereType<String>() // filters out nulls
+        .toList();
 
     // Fetch matches not in that list
     var query = supabase.from('potential_matches').select();
@@ -89,9 +94,7 @@ class MatchService {
         .select('match_id, matches(*)')
         .eq('accepted', true);
 
-    return (rows as List)
-        .map((r) => MatchCard.fromJson(r['matches']))
-        .toList();
+    return (rows as List).map((r) => MatchCard.fromJson(r['matches'])).toList();
   }
 }
 
@@ -101,9 +104,7 @@ class MainApp extends StatelessWidget {
   const MainApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomeScreen(),
-    );
+    return const MaterialApp(home: HomeScreen());
   }
 }
 
@@ -141,7 +142,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openProfile(MatchCard card) {
-    final groupCards = _pendingMatches.where((c) => c.group == card.group).toList();
+    final groupCards = _pendingMatches
+        .where((c) => c.group == card.group)
+        .toList();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -160,8 +163,12 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final choirCards = _pendingMatches.where((c) => c.group == 'choir').toList();
-    final improvCards = _pendingMatches.where((c) => c.group == 'improv').toList();
+    final choirCards = _pendingMatches
+        .where((c) => c.group == 'choir')
+        .toList();
+    final improvCards = _pendingMatches
+        .where((c) => c.group == 'improv')
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0XFFF5F0F6),
@@ -173,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadMatches, // pull fresh data anytime
-          )
+          ),
         ],
       ),
       body: ListView(
@@ -181,8 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Text('Recommended Events',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Recommended Events',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
           ),
           SizedBox(
             height: 180,
@@ -196,8 +205,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Text('Matches',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Matches',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
           ),
           if (choirCards.isNotEmpty)
             MatchRow(
@@ -218,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
         ],
-        ),
+      ),
       bottomNavigationBar: const AppNavigationBar(),
     );
   }
@@ -256,10 +267,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   void _decide(bool accepted) {
     final card = _current;
-    widget.onDecision(card, accepted); // → saves to Supabase, removes from HomeScreen
+    widget.onDecision(
+      card,
+      accepted,
+    ); // → saves to Supabase, removes from HomeScreen
     setState(() {
       _cards.remove(card);
-      if (_cards.isEmpty) { Navigator.pop(context); return; }
+      if (_cards.isEmpty) {
+        Navigator.pop(context);
+        return;
+      }
       if (_index >= _cards.length) _index = _cards.length - 1;
     });
   }
@@ -289,7 +306,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         backgroundColor: const Color(0XFF8789C0),
                         child: Text(
                           _current.title[0],
-                          style: const TextStyle(fontSize: 32, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 32,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -298,11 +318,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         children: [
                           Text(
                             _current.title,
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Text(
                             '${_current.course} at ${_current.subtitle}',
-                            style: const TextStyle(fontSize: 16, color: Colors.grey),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
@@ -329,7 +355,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                   Text(
                     _current.event,
-                    style: const TextStyle(fontSize: 16, color: Colors.deepPurple),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.deepPurple,
+                    ),
                   ),
 
                   const SizedBox(height: 80), // space for buttons
@@ -394,10 +423,14 @@ abstract class BaseCard {
 
 // dummy cards
 class AppCard extends BaseCard {
-  @override final String title;
-  @override final String subtitle;
-  @override final IconData icon;
-  @override final Color color;
+  @override
+  final String title;
+  @override
+  final String subtitle;
+  @override
+  final IconData icon;
+  @override
+  final Color color;
 
   const AppCard({
     required this.title,
@@ -408,10 +441,30 @@ class AppCard extends BaseCard {
 }
 
 const recCards = [
-   AppCard(title: 'Cookie Making', subtitle: 'Baking Society', icon: Icons.cloud, color: Color(0XFFFED766)),
-   AppCard(title: 'Fight Club', subtitle: 'Boxing Society', icon: Icons.cloud, color: Color(0XFFFED766)),
-   AppCard(title: 'Listening Party', subtitle: 'Alternative Music Society', icon: Icons.cloud, color: Color(0XFFFED766)),
-   AppCard(title: 'Off the Hook', subtitle: 'KnitSock', icon: Icons.cloud, color: Color(0XFFFED766)),
+  AppCard(
+    title: 'Cookie Making',
+    subtitle: 'Baking Society',
+    icon: Icons.cloud,
+    color: Color(0XFFFED766),
+  ),
+  AppCard(
+    title: 'Fight Club',
+    subtitle: 'Boxing Society',
+    icon: Icons.cloud,
+    color: Color(0XFFFED766),
+  ),
+  AppCard(
+    title: 'Listening Party',
+    subtitle: 'Alternative Music Society',
+    icon: Icons.cloud,
+    color: Color(0XFFFED766),
+  ),
+  AppCard(
+    title: 'Off the Hook',
+    subtitle: 'KnitSock',
+    icon: Icons.cloud,
+    color: Color(0XFFFED766),
+  ),
 ];
 
 class InteractiveCard extends StatelessWidget {
@@ -419,47 +472,46 @@ class InteractiveCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const InteractiveCard({super.key, required this.card, required this.onTap});
-    
+
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       width: 140,
-      child:
-    Material(
-      color: card.color,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
+      child: Material(
+        color: card.color,
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap ?? () => {}, // handle tap
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(card.icon, color: Color(0XFF222222), size: 32),
-              const Spacer(),
-              Text(
-                card.title,
-                style: const TextStyle(
-                  color: Color(0XFF222222),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap ?? () => {}, // handle tap
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(card.icon, color: Color(0XFF222222), size: 32),
+                const Spacer(),
+                Text(
+                  card.title,
+                  style: const TextStyle(
+                    color: Color(0XFF222222),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                card.subtitle,
-                style: TextStyle(
-                  color: Color(0XFF222222).withValues(alpha: 0.8),
-                  fontSize: 13,
+                const SizedBox(height: 4),
+                Text(
+                  card.subtitle,
+                  style: TextStyle(
+                    color: Color(0XFF222222).withValues(alpha: 0.8),
+                    fontSize: 13,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    )
     );
   }
 }
@@ -474,7 +526,10 @@ class AppNavigationBar extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-        BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Messages'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble),
+          label: 'Messages',
+        ),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
       currentIndex: 0,
@@ -488,25 +543,36 @@ class MatchRow extends StatelessWidget {
   final String eventLabel;
   final void Function(int index) onTap;
 
-  const MatchRow({super.key, required this.cards, required this.eventLabel, required this.onTap});
+  const MatchRow({
+    super.key,
+    required this.cards,
+    required this.eventLabel,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 4, 16),
-        child: Text(eventLabel, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-      ),
-      SizedBox(
-        height: 180,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: cards.length,
-          itemBuilder: (_, i) =>
-              InteractiveCard(card: cards[i], onTap: () => onTap(i)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 4, 16),
+          child: Text(
+            eventLabel,
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
+          ),
         ),
-      ),
-    ]);
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: cards.length,
+            itemBuilder: (_, i) =>
+                InteractiveCard(card: cards[i], onTap: () => onTap(i)),
+          ),
+        ),
+      ],
+    );
   }
 }
