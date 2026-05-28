@@ -21,8 +21,6 @@ jobs:
     # Checkout the code
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: false
 
     # Create .env file
     - name: Create .env file
@@ -69,8 +67,6 @@ jobs:
     # Checkout the code
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: false
 
     # Create .env file
     - name: Create .env file
@@ -176,10 +172,28 @@ jobs:
     - name: Install Dependencies
       run: flutter pub get
 
-    # Build the APK 
+      # Restore consistent debug keystore so signature never changes between builds
+    - name: Restore debug keystore
+      run: |
+        mkdir -p ~/.android
+        echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 --decode > ~/.android/debug.keystore
+
+    # Verify keystore is valid
+    - name: Verify keystore
+      run: |
+        keytool -list -keystore ~/.android/debug.keystore \
+          -storepass android \
+          -alias androiddebugkey
+
+    # Build the APK
     - name: Build APK
       run: flutter build apk --debug
-    
+      env:
+        ORG_GRADLE_PROJECT_storeFile: /home/runner/.android/debug.keystore
+        ORG_GRADLE_PROJECT_storePassword: android
+        ORG_GRADLE_PROJECT_keyAlias: androiddebugkey
+        ORG_GRADLE_PROJECT_keyPassword: android
+
     # Upload APK artifact     
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -198,8 +212,6 @@ jobs:
   #   # Checkout code
   #   - name: Checkout code
   #     uses: actions/checkout@v4
-  #     with:
-  #       submodules: false
 
   #   # Create .env file
   #   - name: Create .env file
@@ -257,8 +269,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: false
 
     # Create .env file
     - name: Create .env file
