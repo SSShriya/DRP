@@ -45,8 +45,8 @@ class MatchCard extends BaseCard {
 
   // So InteractiveCard still works
   String get name => title;
-  IconData get icon => Icons.person;
-  Color get color => const Color(0XFFEEC0C6);
+  @override IconData get icon => Icons.person;
+  @override Color get color => const Color(0XFFEEC0C6);
 }
 
 // -- Supabase service --
