@@ -20,6 +20,8 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   late List<MatchCard> _cards;
   late int _index;
+  bool _isAnimating = false;
+  bool _goingForward = true;
 
   @override
   void initState() {
@@ -28,7 +30,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _index = widget.initialIndex;
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   MatchCard get _current => _cards[_index];
+
+  void _goToPage(int newIndex) {
+    if (_isAnimating) return;
+    _isAnimating = true;
+    setState(() {
+      _goingForward = newIndex > _index;
+      _index = newIndex;
+    });
+    Future.delayed(const Duration(milliseconds: 250), () => _isAnimating = false);
+  }
 
   void _decide(bool accepted) {
     final card = _current;
@@ -59,75 +76,79 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: const Color(0XFF8789C0),
-                        child: Text(
-                          _current.title[0],
-                          style: const TextStyle(
-                            fontSize: 32,
-                            color: Colors.white,
-                          ),
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                if (velocity < -300 && _index < _cards.length - 1) {
+                  _goToPage(_index + 1);
+                } else if (velocity > 300 && _index > 0) {
+                  _goToPage(_index - 1);
+                }
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                layoutBuilder: ((currentChild, previousChildren) {
+                  return currentChild ?? const SizedBox();
+                }),
+                transitionBuilder: (child, animation) {
+                  final isEntering = child.key == ValueKey(_index);
+                  final beginOffset = isEntering
+                      ? Offset(_goingForward ? 1.0 : -1.0, 0.0)  // new page enters from right or left
+                      : Offset(_goingForward ? -1.0 : 1.0, 0.0); // old page exits to left or right
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: beginOffset,
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+                    child: child,
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey(_index),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: const Color(0XFF8789C0),
+                              child: Text(
+                                _current.title[0],
+                                style: const TextStyle(fontSize: 32, color: Colors.white),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(                              // 👈 fixes layout overflow on long names
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _current.title,
+                                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    '${_current.course} at ${_current.subtitle}',
+                                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _current.title,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${_current.course} at ${_current.subtitle}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Text(
-                    _current.bio,
-                    style: const TextStyle(fontSize: 16),
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  const Text(
-                    'Interested in:',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    _current.event,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.deepPurple,
+                        const SizedBox(height: 16),
+                        Text(_current.bio, style: const TextStyle(fontSize: 16), softWrap: true),
+                        const SizedBox(height: 24),
+                        const Text('Interested in:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text(_current.event, style: const TextStyle(fontSize: 16, color: Colors.deepPurple)),
+                        const SizedBox(height: 80),
+                      ],
                     ),
                   ),
-
-                  const SizedBox(height: 80), // space for buttons
-                ],
+                ),
               ),
             ),
           ),
@@ -138,7 +159,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton.icon(
-                  onPressed: _index > 0 ? () => setState(() => _index--) : null,
+                  onPressed: _index > 0 ? () => _goToPage(_index - 1) : null,
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('Prev'),
                 ),
@@ -163,7 +184,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: _index < _cards.length - 1
-                      ? () => setState(() => _index++)
+                      ? () => _goToPage(_index + 1)
                       : null,
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('Next'),
