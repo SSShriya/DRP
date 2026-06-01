@@ -108,8 +108,8 @@ void _decide(bool accepted) {
                 transitionBuilder: (child, animation) {
                   final isEntering = child.key == ValueKey(_index);
                   final beginOffset = isEntering
-                      ? Offset(_goingForward ? 1.0 : -1.0, 0.0)  // new page enters from right or left
-                      : Offset(_goingForward ? -1.0 : 1.0, 0.0); // old page exits to left or right
+                      ? Offset(_goingForward ? 1.0 : -1.0, 0.0)
+                      : Offset(_goingForward ? -1.0 : 1.0, 0.0);
                   return SlideTransition(
                     position: Tween<Offset>(
                       begin: beginOffset,
@@ -136,7 +136,7 @@ void _decide(bool accepted) {
                               ),
                             ),
                             const SizedBox(width: 16),
-                            Expanded(                              // 👈 fixes layout overflow on long names
+                            Expanded(                              // fixes layout overflow on long names
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
