@@ -8,6 +8,7 @@ import 'user_profile_screen.dart';
 import '../models/match_convo.dart';
 import '../widgets/interactive_card.dart';
 import '../screens/event_matches_screen.dart';
+import '../services/event_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,11 +18,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _service = MatchService();
+  final _eventService = EventService();
   List<MatchCard> _pendingMatches = [];
+  List<EventCard> _interestedEvents = [];
   bool _loading = true;
-
   List<ChatConversation> conversations = [];
-  final List<EventCard> _recommendedEvents = recCards;
 
   @override
   void initState() {
@@ -33,9 +34,11 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loading = true);
     final matches = await _service.getPendingMatches();
     final convos = await _service.getConversations();
+    final events = await _eventService.getInterestedEvents();
     setState(() {
       _pendingMatches = matches;
       _loading = false;
+      _interestedEvents = events;
       conversations = convos;
     });
   }
@@ -111,13 +114,14 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: recCards.length,
+              itemCount: _interestedEvents.length,
               itemBuilder: (_, i) => InteractiveCard(
-                card: recCards[i],
+                card: _interestedEvents[i],
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => EventMatchesScreen(event: recCards[i]),
+                    builder: (_) =>
+                        EventMatchesScreen(event: _interestedEvents[i]),
                   ),
                 ),
               ),
@@ -149,10 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      bottomNavigationBar: AppNavigationBar(
-        conversations: conversations,
-        recommendedEvents: _recommendedEvents,
-      ),
+      bottomNavigationBar: AppNavigationBar(),
     );
   }
 }

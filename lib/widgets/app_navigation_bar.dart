@@ -1,18 +1,9 @@
-import 'package:drp/models/event_card.dart';
 import 'package:drp/screens/events_screen.dart';
 import 'package:flutter/material.dart';
-import '../models/match_convo.dart';
 import '../screens/dm_home_screen.dart';
 
 class AppNavigationBar extends StatelessWidget {
-  final List<ChatConversation> conversations;
-  final List<EventCard> recommendedEvents;
-
-  const AppNavigationBar({
-    super.key,
-    required this.conversations,
-    required this.recommendedEvents,
-  });
+  const AppNavigationBar({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,23 +28,13 @@ class AppNavigationBar extends StatelessWidget {
             // Navigate to Search screen
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => EventsScreen(
-                  recommendedEvents: recommendedEvents,
-                  conversations: conversations,
-                ),
-              ),
+              MaterialPageRoute(builder: (_) => EventsScreen()),
             );
             break;
           case 2:
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => DMOverviewScreen(
-                  conversations: conversations,
-                  recommendedEvents: recommendedEvents,
-                ),
-              ),
+              MaterialPageRoute(builder: (_) => DMOverviewScreen()),
             );
             // Navigate to DMOverviewScreen (not implemented)
             break;
