@@ -49,18 +49,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openProfile(MatchCard card) {
     final groupCards = _pendingMatches
-        .where((c) => c.group == card.group)
+        .where((c) => c.event == card.event)
         .toList();
+    final initialIndex = groupCards.indexOf(card);
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => UserProfileScreen(
           cards: groupCards,
-          initialIndex: groupCards.indexOf(card),
+          initialIndex: initialIndex < 0 ? 0 : initialIndex,
           onDecision: _handleDecision,
         ),
       ),
     );
+  }
+
+  // group _pendingMatches by event name
+  Map<String, List<MatchCard>> get _matchesByEvent {
+    final map = <String, List<MatchCard>>{};
+    for (final card in _pendingMatches) {
+      map.putIfAbsent(card.event, () => []).add(card);
+    }
+    return map;
   }
 
   @override
@@ -69,12 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final choirCards = _pendingMatches
-        .where((c) => c.group == 'choir')
-        .toList();
-    final improvCards = _pendingMatches
-        .where((c) => c.group == 'improv')
-        .toList();
+    final groupedMatches = _matchesByEvent;
 
     return Scaffold(
       backgroundColor: const Color(0XFFF5F0F6),
@@ -124,23 +130,22 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
-          if (choirCards.isNotEmpty)
-            MatchRow(
-              cards: choirCards,
-              eventLabel: 'Choir Concert - Music Society',
-              onTap: (i) => _openProfile(choirCards[i]),
-            ),
-          if (improvCards.isNotEmpty)
-            MatchRow(
-              cards: improvCards,
-              eventLabel: 'Taster Session - Improv Society',
-              onTap: (i) => _openProfile(improvCards[i]),
-            ),
-          if (choirCards.isEmpty && improvCards.isEmpty)
+
+
+          // one MatchRow per event
+          if (groupedMatches.isEmpty)
             const Padding(
               padding: EdgeInsets.all(32),
-              child: Center(child: Text("You've reviewed everyone! 🎉")),
-            ),
+              child: Center(child: Text("You've reviewed everyone!!")),
+            )
+          else
+            for (final entry in groupedMatches.entries)
+              MatchRow(
+                cards: entry.value,
+                eventLabel: entry.key,
+                onTap: (i) => _openProfile(entry.value[i]),
+              ),
+          
           const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
         ],
       ),

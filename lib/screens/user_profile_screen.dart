@@ -164,7 +164,7 @@ void _decide(bool accepted) {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _current.group.toUpperCase(),
+                          _current.event.toUpperCase(),
                           style: const TextStyle(fontSize: 16, color: Color(0xFF5DA9E9), fontWeight: FontWeight.bold),
                         ),
 

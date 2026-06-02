@@ -9,7 +9,6 @@ class MatchCard extends BaseCard {
   final String course;
   final String bio;
   final String event;
-  final String group;
   final String yearGroup;
   final List<String> interests;
 
@@ -20,7 +19,6 @@ class MatchCard extends BaseCard {
     required this.course,
     required this.bio,
     required this.event,
-    required this.group,
     required this.yearGroup,
     required this.interests,
   });
@@ -32,7 +30,6 @@ class MatchCard extends BaseCard {
     course: json['course'],
     bio: json['bio'],
     event: json['event'],
-    group: json['event_group'],
     yearGroup: json['year_group'] ?? '',
     interests: (json['user_interests'] as List<dynamic>? ?? [])
     .map((i) => i['interest'] as String)
