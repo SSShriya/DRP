@@ -149,6 +149,7 @@ class _EventsScreenState extends State<EventsScreen> {
       bottomNavigationBar: AppNavigationBar(
         conversations: widget.conversations,
         recommendedEvents: widget.recommendedEvents,
+        currentIndex: 1,
       ),
     );
   }
