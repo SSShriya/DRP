@@ -94,23 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
             child: Text(
-              'Recommended Events',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-          ),
-          SizedBox(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: recCards.length,
-              itemBuilder: (_, i) =>
-                  InteractiveCard(card: recCards[i], onTap: () {}),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Text(
               'Matches',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
@@ -135,8 +118,10 @@ class _HomeScreenState extends State<HomeScreen> {
           const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
         ],
       ),
-      
-      bottomNavigationBar: AppNavigationBar(conversations: conversations), // add dm data
+
+      bottomNavigationBar: AppNavigationBar(
+        conversations: conversations,
+      ), // add dm data
     );
   }
 }
