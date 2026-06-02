@@ -19,7 +19,7 @@ class MatchService {
     // Fetch matches not in that list
     var query = supabase
         .from('potential_matches')
-        .select('*, interests(interest)');
+        .select('*, user_interests(interest)');
     final rows = decidedIds.isEmpty
         ? await query
         : await query.not('id', 'in', decidedIds);
@@ -50,7 +50,7 @@ class MatchService {
   Future<List<ChatConversation>> getConversations() async {
     final rows = await supabase
         .from('decisions')
-        .select('match_id, potential_matches(name, interests(interest))')
+        .select('match_id, potential_matches(name, user_interests(interest))')
         .eq('accepted', true);
 
     return rows
@@ -58,7 +58,7 @@ class MatchService {
           final matchData = r['potential_matches'] as Map<String, dynamic>?;
           final String name = matchData?['name'] ?? 'Unknown Match';
 
-          final interestsData = matchData?['interests'] as List<dynamic>? ?? [];
+          final interestsData = matchData?['user_interests'] as List<dynamic>? ?? [];
           final List<String> interestsList = interestsData
               .map((i) => i['interest'] as String)
               .toList();
