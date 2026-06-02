@@ -49,7 +49,7 @@ class AppNavigationBar extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => DMOverviewScreen(conversations: conversations),
+                builder: (_) => DMOverviewScreen(conversations: conversations, recommendedEvents: recommendedEvents),
               ),
             );
             // Navigate to DMOverviewScreen (not implemented)

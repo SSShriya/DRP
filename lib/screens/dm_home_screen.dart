@@ -2,10 +2,12 @@ import 'package:drp/screens/dm_individual_screen.dart';
 import 'package:drp/widgets/app_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import '../models/match_convo.dart';
+import '../models/app_card.dart';
 
 class DMOverviewScreen extends StatefulWidget {
-  final List<ChatConversation> conversations; // replace with actual conversation model
-  const DMOverviewScreen({super.key, required this.conversations});
+  final List<ChatConversation> conversations;
+  final List<AppCard> recommendedEvents;
+  const DMOverviewScreen({super.key, required this.conversations, required this.recommendedEvents});
   @override
   State<DMOverviewScreen> createState() => _DMOverviewScreenState();
 }
@@ -15,6 +17,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
 @override
   Widget build(BuildContext context) {
     final List<ChatConversation> conversations = widget.conversations;
+    final List<AppCard> recommendedEvents = widget.recommendedEvents;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -152,7 +155,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: AppNavigationBar(conversations: conversations), // add dm data
+      bottomNavigationBar: AppNavigationBar(conversations: conversations, recommendedEvents: recommendedEvents), // add dm data
     );
   }
 }
