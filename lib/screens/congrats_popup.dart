@@ -1,4 +1,4 @@
-import 'package:drp/screens/dm_screen.dart';
+import 'package:drp/screens/dm_individual_screen.dart';
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 

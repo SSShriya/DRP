@@ -147,11 +147,12 @@ void _decide(bool accepted) {
               ),
             ),
           ),
+          
           // pagination dots
           AnimatedSmoothIndicator(
             activeIndex: _index,
             count: _cards.length,
-            effect: const WormEffect( // You can choose different effects like ExpandingDotsEffect
+            effect: const WormEffect(
               dotHeight: 8,
               dotWidth: 8,
               activeDotColor: Color(0XFF84DCC6),
