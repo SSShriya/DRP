@@ -1,4 +1,4 @@
-import 'package:drp/models/app_card.dart';
+import 'package:drp/models/event_card.dart';
 import 'package:flutter/material.dart';
 import '../models/base_card.dart';
 import '../models/match_card.dart';
@@ -78,7 +78,7 @@ class InteractiveCard extends StatelessWidget {
                 // ── Subtitle ──
                 Text(
                   matchCard != null && matchCard.interests.isNotEmpty
-                      ? matchCard.interests.take(2).join(', ')
+                      ? matchCard.interests.take(3).join(', ')
                       : eventCard?.subtitle ?? '',
                   style: TextStyle(
                     color: const Color(0xFF222222).withValues(alpha: 0.8),
@@ -88,7 +88,7 @@ class InteractiveCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
 
-                // ── Date & Time (EventCard only) ──
+                // ── Date & Time & Location (EventCard only) ──
                 if (eventCard != null) ...[
                   const Spacer(),
                   const Divider(
@@ -105,6 +105,30 @@ class InteractiveCard extends StatelessWidget {
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 11,
+                        color: const Color(0xFF222222).withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          eventCard.location,
+                          style: TextStyle(
+                            color: const Color(
+                              0xFF222222,
+                            ).withValues(alpha: 0.8),
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],

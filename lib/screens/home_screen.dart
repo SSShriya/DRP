@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/match_card.dart';
-import '../models/app_card.dart';
+import '../models/event_card.dart';
 import '../services/match_service.dart';
 import '../widgets/interactive_card.dart';
 import '../widgets/match_row.dart';
