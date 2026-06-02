@@ -6,6 +6,7 @@ import '../widgets/match_row.dart';
 import '../widgets/app_navigation_bar.dart';
 import 'user_profile_screen.dart';
 import '../models/match_convo.dart';
+import '../widgets/interactive_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
 
   List<ChatConversation> conversations = [];
-  final List<AppCard> _recommendedEvents = recCards;
+  final List<EventCard> _recommendedEvents = recCards;
 
   @override
   void initState() {
