@@ -181,6 +181,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
       bottomNavigationBar: AppNavigationBar(
         conversations: conversations,
         recommendedEvents: recommendedEvents,
+        currentIndex: 2,
       ), // add dm data
     );
   }
