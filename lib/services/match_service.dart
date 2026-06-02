@@ -89,4 +89,39 @@ class MatchService {
         .eq('user2_id', user2Id)
         .eq('event_id', eventId);
   }
+
+  // for getting confirmed matches for an event
+  Future<List<MatchCard>> getConfirmedMatchesForEvent(String eventId) async {
+    final rows = await supabase
+        .from('matches')
+        .select(
+          'user1:user1_id(id, name, university, course, bio, year_group, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, user_interests(interest))',
+        )
+        .eq('event_id', eventId)
+        .eq('user1_accepted', true)
+        .eq('user2_accepted', true)
+        .or('user1_id.eq.$currentUserId,user2_id.eq.$currentUserId');
+
+    return (rows as List).map((row) {
+      final user1Data = row['user1'] as Map<String, dynamic>;
+      final user2Data = row['user2'] as Map<String, dynamic>;
+
+      final otherUser = user1Data['id'] == currentUserId
+          ? user2Data
+          : user1Data;
+
+      return MatchCard(
+        id: otherUser['id'],
+        title: otherUser['name'] ?? 'Unknown',
+        university: otherUser['university'] ?? '',
+        course: otherUser['course'] ?? '',
+        bio: otherUser['bio'] ?? '',
+        event: eventId,
+        yearGroup: otherUser['year_group'] ?? '',
+        interests: (otherUser['user_interests'] as List<dynamic>? ?? [])
+            .map((i) => i['interest'] as String)
+            .toList(),
+      );
+    }).toList();
+  }
 }

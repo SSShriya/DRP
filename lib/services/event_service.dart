@@ -21,12 +21,14 @@ class EventService {
       final e = row['events'] as Map<String, dynamic>;
 
       return EventCard(
+        eventId: e['event_id'],
         title: e['event_name'] ?? '',
         subtitle: e['description'] ?? '',
         numMatches: 0,
         startDateTime: _parseDateTime(e['start_day'], e['start_time']),
         endDateTime: _parseDateTime(e['end_day'], e['end_time']),
         location: e['location'] ?? '',
+        cost: (e['cost'] as num?)?.toDouble() ?? 0.0,
         icon: Icons.event,
         color: const Color(0XFFFED766),
       );
@@ -34,23 +36,27 @@ class EventService {
   }
 
   Future<List<EventCard>> getAllEvents() async {
-  final rows = await supabase
-      .from('events')
-      .select('event_id, event_name, start_day, start_time, end_day, end_time, location, cost, description');
+    final rows = await supabase
+        .from('events')
+        .select(
+          'event_id, event_name, start_day, start_time, end_day, end_time, location, cost, description',
+        );
 
-  return (rows as List).map((e) {
-    return EventCard(
-      title: e['event_name'] ?? '',
-      subtitle: e['description'] ?? '',
-      numMatches: 0,
-      startDateTime: _parseDateTime(e['start_day'], e['start_time']),
-      endDateTime: _parseDateTime(e['end_day'], e['end_time']),
-      location: e['location'] ?? '',
-      icon: Icons.event,
-      color: const Color(0XFFFED766),
-    );
-  }).toList();
-}
+    return (rows as List).map((e) {
+      return EventCard(
+        eventId: e['event_id'],
+        title: e['event_name'] ?? '',
+        subtitle: e['description'] ?? '',
+        numMatches: 0,
+        startDateTime: _parseDateTime(e['start_day'], e['start_time']),
+        endDateTime: _parseDateTime(e['end_day'], e['end_time']),
+        cost: (e['cost'] as num?)?.toDouble() ?? 0.0,
+        location: e['location'] ?? '',
+        icon: Icons.event,
+        color: const Color(0XFFFED766),
+      );
+    }).toList();
+  }
 }
 
 // Combines "2026-06-03" + "18:00:00" → DateTime
