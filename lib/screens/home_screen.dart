@@ -7,6 +7,7 @@ import '../widgets/app_navigation_bar.dart';
 import 'user_profile_screen.dart';
 import '../models/match_convo.dart';
 import '../widgets/interactive_card.dart';
+import '../screens/event_matches_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -105,8 +106,15 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: recCards.length,
-              itemBuilder: (_, i) =>
-                  InteractiveCard(card: recCards[i], onTap: () {}),
+              itemBuilder: (_, i) => InteractiveCard(
+                card: recCards[i],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EventMatchesScreen(event: recCards[i]),
+                  ),
+                ),
+              ),
             ),
           ),
           const Padding(

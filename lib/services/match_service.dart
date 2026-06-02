@@ -17,7 +17,9 @@ class MatchService {
         .toList();
 
     // Fetch matches not in that list
-    var query = supabase.from('potential_matches').select('*, interests(interest)');
+    var query = supabase
+        .from('potential_matches')
+        .select('*, interests(interest)');
     final rows = decidedIds.isEmpty
         ? await query
         : await query.not('id', 'in', decidedIds);
@@ -40,7 +42,9 @@ class MatchService {
         .select('match_id, potential_matches(*)')
         .eq('accepted', true);
 
-    return (rows as List).map((r) => MatchCard.fromJson(r['potential_matches'])).toList();
+    return (rows as List)
+        .map((r) => MatchCard.fromJson(r['potential_matches']))
+        .toList();
   }
 
   Future<List<ChatConversation>> getConversations() async {
@@ -50,18 +54,15 @@ class MatchService {
         .eq('accepted', true);
 
     return rows.map((r) {
-        final matchData = r['potential_matches'] as Map<String, dynamic>?;
-        final String name = matchData?['name'] ?? 'Unknown Match';
+      final matchData = r['potential_matches'] as Map<String, dynamic>?;
+      final String name = matchData?['name'] ?? 'Unknown Match';
 
-        final interestsData = matchData?['interests'] as List<dynamic>? ?? [];
-        final List<String> interestsList = interestsData
-            .map((i) => i['interest'] as String)
-            .toList();
+      final interestsData = matchData?['interests'] as List<dynamic>? ?? [];
+      final List<String> interestsList = interestsData
+          .map((i) => i['interest'] as String)
+          .toList();
 
-        return ChatConversation(
-          name: name,
-          interests: interestsList,
-        );
+      return ChatConversation(name: name, interests: interestsList);
     }).toList();
   }
 }
