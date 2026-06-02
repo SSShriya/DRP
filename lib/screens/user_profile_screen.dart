@@ -1,6 +1,7 @@
 import 'package:drp/screens/congrats_popup.dart';
 import 'package:flutter/material.dart';
 import '../models/match_card.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final List<MatchCard> cards;
@@ -208,6 +209,20 @@ void _decide(bool accepted) {
               ),
             ),
           ),
+          
+          // pagination dots
+          AnimatedSmoothIndicator(
+            activeIndex: _index,
+            count: _cards.length,
+            effect: const WormEffect(
+              dotHeight: 8,
+              dotWidth: 8,
+              activeDotColor: Color(0XFF84DCC6),
+              dotColor: Colors.grey,
+            ),
+          ),
+
+          const SizedBox(height: 20),
 
           Padding(
             padding: const EdgeInsets.only(bottom: 40),
@@ -215,7 +230,7 @@ void _decide(bool accepted) {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton.icon(
-                  onPressed: _index > 0 ? () => _goToPage(_index - 1) : null,
+                  onPressed: _index > 0 ? () => setState(() => _index--) : () => setState(() => _index = _cards.length - 1),
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('Prev'),
                 ),
@@ -240,8 +255,8 @@ void _decide(bool accepted) {
                 const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: _index < _cards.length - 1
-                      ? () => _goToPage(_index + 1)
-                      : null,
+                      ? () => setState(() => _index++)
+                      : () => setState(() => _index = 0),
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('Next'),
                 ),

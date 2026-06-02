@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/match_card.dart';
+import '../models/match_convo.dart';
 
 // Single shared Supabase client for the whole app
 final supabase = Supabase.instance.client;
@@ -30,16 +31,32 @@ class MatchService {
       'match_id': matchId,
       'accepted': accepted,
     });
-    await supabase.from('potential_matches').delete().eq('id', matchId);
   }
 
   // Fetch accepted matches (for a future "Accepted" screen)
   Future<List<MatchCard>> getAcceptedMatches() async {
     final rows = await supabase
         .from('decisions')
-        .select('match_id, matches(*)')
+        .select('match_id, potential_matches(*)')
         .eq('accepted', true);
 
-    return (rows as List).map((r) => MatchCard.fromJson(r['matches'])).toList();
+    return (rows as List).map((r) => MatchCard.fromJson(r['potential_matches'])).toList();
   }
+
+  Future<List<ChatConversation>> getConversations() async {
+    /*final rows = await supabase
+      .from('potential_matches')
+      .select('name, decisions!inner(accepted)')
+      .eq('decisions.accepted', true);
+
+    return (rows as List).map((r) => ChatConversation(
+      name: r.name,
+      lastMessage: '',
+      time: '09:00 AM',
+      unreadCount: 0,
+      isOnline: true,
+    )).toList();*/
+    return [];
+  }
+
 }

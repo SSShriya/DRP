@@ -6,6 +6,7 @@ import '../widgets/interactive_card.dart';
 import '../widgets/match_row.dart';
 import '../widgets/app_navigation_bar.dart';
 import 'user_profile_screen.dart';
+import '../models/match_convo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<MatchCard> _pendingMatches = [];
   bool _loading = true;
 
+  List<ChatConversation> conversations = [];
+
   @override
   void initState() {
     super.initState();
@@ -27,9 +30,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadMatches() async {
     setState(() => _loading = true);
     final matches = await _service.getPendingMatches();
+    final convos = await _service.getConversations();
     setState(() {
       _pendingMatches = matches;
       _loading = false;
+      conversations = convos;
     });
   }
 
@@ -81,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: _loadMatches, // pull fresh data anytime
           ),
         ],
+        automaticallyImplyLeading: false,
       ),
       body: ListView(
         padding: EdgeInsets.zero,
@@ -129,7 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
         ],
       ),
-      bottomNavigationBar: const AppNavigationBar(),
+      
+      bottomNavigationBar: AppNavigationBar(conversations: conversations), // add dm data
     );
   }
 }
