@@ -31,7 +31,6 @@ class MatchService {
       'match_id': matchId,
       'accepted': accepted,
     });
-    await supabase.from('potential_matches').delete().eq('id', matchId);
   }
 
   // Fetch accepted matches (for a future "Accepted" screen)
@@ -45,7 +44,7 @@ class MatchService {
   }
 
   Future<List<ChatConversation>> getConversations() async {
-    final rows = await supabase
+    /*final rows = await supabase
       .from('potential_matches')
       .select('name, decisions!inner(accepted)')
       .eq('decisions.accepted', true);
@@ -56,7 +55,8 @@ class MatchService {
       time: '09:00 AM',
       unreadCount: 0,
       isOnline: true,
-    )).toList();
+    )).toList();*/
+    return [];
   }
 
 }
