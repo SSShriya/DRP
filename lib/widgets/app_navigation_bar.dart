@@ -1,4 +1,4 @@
-import 'package:drp/models/app_card.dart';
+import 'package:drp/models/event_card.dart';
 import 'package:drp/screens/events_screen.dart';
 import 'package:drp/screens/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +7,7 @@ import '../screens/dm_home_screen.dart';
 
 class AppNavigationBar extends StatelessWidget {
   final List<ChatConversation> conversations;
-  final List<AppCard> recommendedEvents;
+  final List<EventCard> recommendedEvents;
 
   const AppNavigationBar({
     super.key,
@@ -30,7 +30,7 @@ class AppNavigationBar extends StatelessWidget {
       ],
       currentIndex: 0,
       onTap: (index) {
-        switch(index) {
+        switch (index) {
           case 0:
             Navigator.push(
               context, 
@@ -55,7 +55,10 @@ class AppNavigationBar extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => DMOverviewScreen(conversations: conversations, recommendedEvents: recommendedEvents),
+                builder: (_) => DMOverviewScreen(
+                  conversations: conversations,
+                  recommendedEvents: recommendedEvents,
+                ),
               ),
             );
             // Navigate to DMOverviewScreen (not implemented)

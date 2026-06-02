@@ -34,7 +34,7 @@ class MatchCard extends BaseCard {
     event: json['event'],
     group: json['event_group'],
     yearGroup: json['year_group'] ?? '',
-    interests: (json['interests'] as List<dynamic>? ?? [])
+    interests: (json['user_interests'] as List<dynamic>? ?? [])
     .map((i) => i['interest'] as String)
     .toList(),
   );
