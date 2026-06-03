@@ -5,6 +5,7 @@ class ChatConversation {
   final String time;
   final int unreadCount;
   final bool isOnline;
+  final List<_Message> messages = [];
 
   ChatConversation({
     required this.name,
@@ -14,4 +15,11 @@ class ChatConversation {
     this.unreadCount = 0,
     this.isOnline = false,
   });
+}
+
+class _Message {
+  final String text;
+  final bool fromMe;
+
+  _Message({required this.text, required this.fromMe});
 }

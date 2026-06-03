@@ -18,6 +18,7 @@ class _DMScreenState extends State<DMScreen> {
   void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    widget.chat.messages.add(text);
     setState(() {
       _messages.add(_Message(text: text, fromMe: true));
     });

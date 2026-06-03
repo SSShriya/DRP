@@ -16,7 +16,7 @@ class ConversationService {
         )
         .eq('user1_accepted', true)
         .eq('user2_accepted', true)
-        .or('user1_id.eq.$currentUserId,user2_id.eq.$currentUserId');
+        .or('user1_id.eq.$currentUserId, user2_id.eq.$currentUserId');
 
     return (rows as List).map((r) {
       final user1Data = r['user1'] as Map<String, dynamic>;
