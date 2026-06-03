@@ -1,6 +1,7 @@
 import 'package:drp/models/event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/base_card.dart';
 import '../models/match_card.dart';
 import 'package:intl/intl.dart';
@@ -76,7 +77,7 @@ class InteractiveCard extends StatelessWidget {
                 // ── Title ──
                 Text(
                   card.title,
-                  style: const TextStyle(
+                  style: GoogleFonts.bitter(
                     color: Color(0xFF222222),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -93,18 +94,18 @@ class InteractiveCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.school,
-                        size: 11,
+                        size: 10,
                         color: const Color(0xFF222222).withValues(alpha: 0.8),
                       ),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
                           '${matchCard.yearGroup} · ${matchCard.university}',
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: GoogleFonts.merriweather(
+                            fontSize: 11,
                             color: const Color(
                               0xFF222222,
-                            ).withValues(alpha: 0.7),
+                            ).withValues(alpha: 0.8),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -128,11 +129,11 @@ class InteractiveCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           matchCard.location,
-                          style: TextStyle(
+                          style: GoogleFonts.merriweather(
                             color: const Color(
                               0xFF222222,
                             ).withValues(alpha: 0.8),
-                            fontSize: 13,
+                            fontSize: 11,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -145,9 +146,9 @@ class InteractiveCard extends StatelessWidget {
                 // ── Subtitle ──
                 if (matchCard != null && matchCard.interests.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Interests',
-                    style: TextStyle(
+                    style: GoogleFonts.merriweather(
                       color: Color(0xFF222222),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -160,22 +161,22 @@ class InteractiveCard extends StatelessWidget {
                         .take(3)
                         .map(
                           (interest) => Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
+                            padding: const EdgeInsets.only(bottom: 2,),
                             child: Row(
                               children: [
-                                const Text(
+                                Text(
                                   '★ ',
-                                  style: TextStyle(
+                                  style: GoogleFonts.merriweather(
                                     color: Color(0xFF222222),
-                                    fontSize: 11,
+                                    fontSize: 13,
                                   ),
                                 ),
                                 Expanded(
                                   child: Text(
                                     interest,
-                                    style: const TextStyle(
+                                    style: GoogleFonts.merriweather(
                                       color: Color(0xFF222222),
-                                      fontSize: 13,
+                                      fontSize: 11,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -200,7 +201,7 @@ class InteractiveCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${DateFormat('d MMM').format(eventCard.startDateTime)}  ·  ${DateFormat('HH:mm').format(eventCard.startDateTime)}-${DateFormat('HH:mm').format(eventCard.endDateTime)}',
-                    style: TextStyle(
+                    style: GoogleFonts.merriweather(
                       color: const Color(0xFF222222).withValues(alpha: 0.8),
                       fontSize: 11,
                     ),
@@ -219,7 +220,7 @@ class InteractiveCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           eventCard.location,
-                          style: TextStyle(
+                          style: GoogleFonts.merriweather(
                             color: const Color(
                               0xFF222222,
                             ).withValues(alpha: 0.8),
