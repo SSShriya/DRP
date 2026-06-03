@@ -12,6 +12,26 @@ class EventProfileScreen extends StatefulWidget {
 }
 
 class _EventProfileScreenState extends State<EventProfileScreen> {
+  RegistrationService registrationService = RegistrationService();
+  bool _isRegistered = false; 
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfAlreadyRegistered(); 
+  }
+
+  Future<void> _checkIfAlreadyRegistered() async {
+    final isRegistered = await registrationService.hasRegistered(
+      widget.card.eventId,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isRegistered = isRegistered;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +48,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => RegistrationService().registerForEvent(widget.card.eventId),
+                onPressed: () => _isRegistered ? registrationService.registerForEvent(widget.card.eventId) : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0XFF84DCC6),
                   foregroundColor: const Color(0XFF222222),
@@ -37,13 +57,19 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                    "I'M GOING!",
+                child: _isRegistered ? const Text(
+                    "You've already registered!",
                     style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ) : const Text(
+                    "I'm going!",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                )
               ),
             ),
             const SizedBox(height: 32),
