@@ -1,9 +1,9 @@
 import 'package:drp/widgets/app_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import '../models/event_card.dart';
-import '../widgets/interactive_card.dart';
 import '../services/event_service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/event_detail_card.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -169,7 +169,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                 horizontal: 12,
                               ),
                               itemCount: _filteredEvents.length,
-                              itemBuilder: (_, i) => InteractiveCard(
+                              itemBuilder: (_, i) => EventDetailCard(
                                 card: _filteredEvents[i],
                                 onTap: () {},
                               ),
@@ -192,7 +192,7 @@ class _EventsScreenState extends State<EventsScreen> {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: SizedBox(
                               height: 250,
-                              child: InteractiveCard(
+                              child: EventDetailCard(
                                 card: _filteredEvents[i],
                                 onTap: () {},
                               ),
