@@ -1,6 +1,7 @@
 class ChatConversation {
   final String name;
   final String otherUserId;
+  final String event;
   final List<String> interests;
   final String? imageUrl;
   final String lastMessage;
@@ -12,6 +13,7 @@ class ChatConversation {
   ChatConversation({
     required this.name,
     required this.otherUserId,
+    required this.event,
     required this.interests,
     required this.imageUrl,
     this.lastMessage = '',

@@ -12,7 +12,10 @@ class ConversationService {
     final matchRows = await supabase
       .from('matches')
       .select(
-        '*, user1:user1_id(id, name, avatar_url, user_interests(interest)), user2:user2_id(id, name, avatar_url, user_interests(interest))',
+        '''*, 
+        user1:user1_id(id, name, avatar_url, user_interests(interest)), 
+        user2:user2_id(id, name, avatar_url, user_interests(interest)),
+        event:event_id(event_name)''',
       )
       .eq('user1_accepted', true)
       .eq('user2_accepted', true)
@@ -45,13 +48,29 @@ class ConversationService {
       final messageCount = directMessages.length;
       final hasHistory = messageCount > 0;
 
+      final eventData = r['event'];
+
+      String eventName = '';
+
+      if (eventData != null) {
+        if (eventData is Map<String, dynamic>) {
+          eventName = eventData['event_name'] as String? ?? '';
+        } else if (eventData is List && eventData.isNotEmpty) {
+          final firstEvent = eventData.first;
+          if (firstEvent is Map) {
+            eventName = firstEvent['event_name'] as String? ?? '';
+          }
+        }
+      }
+
       return ChatConversation(
         name: name,
         otherUserId: actualOtherUserId,
+        event: eventName,
         interests: interestsList,
         imageUrl: otherUser['avatar_url'] as String? ?? '', // Placeholder, can be extended to fetch actual image URLs
         numMessages: messageCount, // Now truly dynamic!
-        lastMessage: hasHistory ? directMessages.last['content'] ?? '' : 'No messages yet',
+        lastMessage: hasHistory ? directMessages.last['content'] ?? '' : 'Interests: ${interestsList.join(', ')}',
         time: hasHistory ? 'Active' : '', 
         unreadCount: 0,
         isOnline: false,
