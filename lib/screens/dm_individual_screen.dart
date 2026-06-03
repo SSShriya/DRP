@@ -67,53 +67,59 @@ class _DMScreenState extends State<DMScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: const Color(0XFF8789C0),
-              child: Text(
-                widget.chat.name[0],
-                style: const TextStyle(color: Colors.white),
+    return PopScope(
+      canPop: false,
+    onPopInvokedWithResult: (didPop, result) async {
+      if (didPop) return;      
+      Navigator.pop(context, true); 
+    },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: const Color(0XFF8789C0),
+                child: Text(
+                  widget.chat.name[0],
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(widget.chat.name),
-          ],
+              const SizedBox(width: 12),
+              Text(widget.chat.name),
+            ],
+          ),
+          backgroundColor: const Color(0XFF84DCC6),
+          foregroundColor: Colors.white,
         ),
-        backgroundColor: const Color(0XFF84DCC6),
-        foregroundColor: Colors.white,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          :
-      Column(
-        children: [
-          SizedBox(height: 16),
-          Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Interests:',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        BulletedList(
-                          listItems: widget.chat.interests,
-                          style: const TextStyle(
-                            color: Colors.grey,
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            :
+            Column(
+              children: [
+                SizedBox(height: 16),
+                Expanded(
+                  child: _messages.isEmpty
+                      ? Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Interests:',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              BulletedList(
+                                listItems: widget.chat.interests,
+                                style: const TextStyle(
+                                  color: Colors.grey,
                             fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  )
+                        )
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _messages.length,
@@ -201,6 +207,7 @@ class _DMScreenState extends State<DMScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

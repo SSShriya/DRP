@@ -102,10 +102,12 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
           ChatSection(
             title: 'New Chats',
             conversations: _newConvos,
+            onRefresh: _loadConversations,
           ),
           ChatSection(
             title: 'Existing Chats',
             conversations: _oldConvos,
+            onRefresh: _loadConversations,
           )
         ],
       ),

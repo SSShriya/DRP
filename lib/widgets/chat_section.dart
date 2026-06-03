@@ -5,15 +5,17 @@ import 'package:flutter/material.dart';
 class ChatSection extends StatelessWidget {
   final String title;
   final List<ChatConversation> conversations;
+  final VoidCallback onRefresh;
 
   const ChatSection({
     super.key, 
     required this.title,
     required this.conversations,
+    required this.onRefresh,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {      
       return ExpansionTile(
             title: Text(title),
             initiallyExpanded: true,
@@ -25,12 +27,15 @@ class ChatSection extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final chat = conversations[index];
                   return ListTile(
-                  onTap: () {
-                    // Navigate to individual chat thread
-                    Navigator.push(
+                  onTap: () async {
+                    final shouldRefresh = await Navigator.push<bool>(
                       context,
                       MaterialPageRoute(builder: (_) => DMScreen(chat: chat)),
                     );
+
+                    if (shouldRefresh == true) {
+                      onRefresh();
+                    }
                   },
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
