@@ -4,6 +4,7 @@ import '../models/event_card.dart';
 import '../services/event_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/event_detail_card.dart';
+import 'event_profile_screen.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -54,6 +55,15 @@ class _EventsScreenState extends State<EventsScreen> {
           )
           .toList();
     });
+  }
+
+  void _openEventSummary(EventCard card) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EventProfileScreen(card: card),
+      ),
+    );
   }
 
   void _clearSearch() {
@@ -153,15 +163,15 @@ class _EventsScreenState extends State<EventsScreen> {
                                 : width > 600
                                 ? 3
                                 : 2;
-                            final aspectRatio = width > 900
-                                ? 0.85
-                                : width > 600
-                                ? 0.95
-                                : 0.75;
-                            final cardWidth =
-                                (width - 12 * (crossAxisCount + 1)) /
+                            // final aspectRatio = width > 900
+                            //     ? 0.85
+                            //     : width > 600
+                            //     ? 0.95
+                            //     : 0.75;
+                            // final cardWidth =
+                            //     (width - 12 * (crossAxisCount + 1)) /
                                 crossAxisCount;
-                            final cardHeight = cardWidth * aspectRatio;
+                            // final cardHeight = cardWidth * aspectRatio;
                             return GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -171,14 +181,16 @@ class _EventsScreenState extends State<EventsScreen> {
                               itemCount: _filteredEvents.length,
                               itemBuilder: (_, i) => EventDetailCard(
                                 card: _filteredEvents[i],
-                                onTap: () {},
+                                onTap: () => _openEventSummary(_filteredEvents[i]),
                               ),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: crossAxisCount,
                                     mainAxisSpacing: 12,
                                     crossAxisSpacing: 12,
-                                    childAspectRatio: cardWidth / cardHeight,
+                                    // childAspectRatio: cardWidth / cardHeight,
+                                    childAspectRatio: 1.0,
+                                    mainAxisExtent: 230,
                                   ),
                             );
                           },
@@ -194,7 +206,7 @@ class _EventsScreenState extends State<EventsScreen> {
                               height: 250,
                               child: EventDetailCard(
                                 card: _filteredEvents[i],
-                                onTap: () {},
+                                onTap: () => _openEventSummary(_filteredEvents[i]),
                               ),
                             ),
                           ),
