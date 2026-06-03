@@ -138,7 +138,7 @@ class InteractiveCard extends StatelessWidget {
                       SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          matchCard!.location,
+                          matchCard.location,
                           style: TextStyle(
                             color: const Color(
                               0xFF222222,
