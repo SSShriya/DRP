@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
 import '../models/match_convo.dart';
-import 'package:bulleted_list/bulleted_list.dart';
 import '../services/conversation_service.dart';
 
 class DMScreen extends StatefulWidget {
