@@ -1,8 +1,9 @@
 import 'package:drp/widgets/app_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import '../models/event_card.dart';
-import '../widgets/interactive_card.dart';
 import '../services/event_service.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../widgets/event_detail_card.dart';
 import 'event_profile_screen.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _EventsScreenState extends State<EventsScreen> {
   List<EventCard> _allEvents = [];
   List<EventCard> _filteredEvents = [];
   bool _loading = true;
+  bool _isGridView = true;
 
   @override
   void initState() {
@@ -91,6 +93,10 @@ class _EventsScreenState extends State<EventsScreen> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search events...',
+                      hintStyle: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -124,28 +130,85 @@ class _EventsScreenState extends State<EventsScreen> {
 
                 // Events Section
                 if (_filteredEvents.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-                    child: Text(
-                      'All Events',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'All Events',
+                          style: GoogleFonts.lora(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            _isGridView ? Icons.view_list : Icons.grid_view,
+                          ),
+                          onPressed: () =>
+                              setState(() => _isGridView = !_isGridView),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(
-                    height: 220,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: _filteredEvents.length,
-                      itemBuilder: (_, i) => InteractiveCard(
-                        card: _filteredEvents[i],
-                        onTap: () => _openEventSummary(_filteredEvents[i]),
-                      ),
-                    ),
-                  ),
+                  _isGridView
+                      ? LayoutBuilder(
+                          builder: (context, constraints) {
+                            final width = constraints.maxWidth;
+                            final crossAxisCount = width > 1200
+                                ? 5
+                                : width > 900
+                                ? 4
+                                : width > 600
+                                ? 3
+                                : 2;
+                            final aspectRatio = width > 900
+                                ? 0.85
+                                : width > 600
+                                ? 0.95
+                                : 1.2;
+                            final cardWidth =
+                                (width - 12 * (crossAxisCount + 1)) /
+                                crossAxisCount;
+                            final cardHeight = cardWidth * aspectRatio;
+                            return GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              itemCount: _filteredEvents.length,
+                              itemBuilder: (_, i) => EventDetailCard(
+                                card: _filteredEvents[i],
+                                onTap: () => _openEventSummary(_filteredEvents[i]),
+                              ),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    mainAxisSpacing: 12,
+                                    crossAxisSpacing: 12,
+                                    childAspectRatio: cardWidth / cardHeight,
+                                  ),
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          itemCount: _filteredEvents.length,
+                          itemBuilder: (_, i) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SizedBox(
+                              height: 250,
+                              child: EventDetailCard(
+                                card: _filteredEvents[i],
+                                onTap: () => _openEventSummary(_filteredEvents[i]),
+                              ),
+                            ),
+                          ),
+                        ),
                 ] else
                   Padding(
                     padding: const EdgeInsets.all(32),
@@ -160,7 +223,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           const SizedBox(height: 16),
                           Text(
                             'No events found',
-                            style: TextStyle(
+                            style: GoogleFonts.montserrat(
                               fontSize: 16,
                               color: Colors.grey[600],
                             ),

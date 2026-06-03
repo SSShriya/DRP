@@ -1,6 +1,7 @@
-import 'package:drp/screens/dm_individual_screen.dart';
 import 'package:drp/widgets/app_navigation_bar.dart';
+import 'package:drp/widgets/chat_section.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/match_convo.dart';
 import '../services/conversation_service.dart';
 
@@ -14,6 +15,9 @@ class DMOverviewScreen extends StatefulWidget {
 class _DMOverviewScreenState extends State<DMOverviewScreen> {
   final _conversationService = ConversationService();
   List<ChatConversation> _conversations = [];
+  List<ChatConversation> _newConvos = [];
+  List<ChatConversation> _oldConvos = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -25,15 +29,23 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
     final convos = await _conversationService.getConversations();
     setState(() {
       _conversations = convos;
+      _newConvos = _conversations
+          .where((chat) => chat.numMessages <= 0)
+          .toList();
+      _oldConvos = _conversations
+          .where((chat) => chat.numMessages > 0)
+          .toList();
+      isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F0F6),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0XFF84DCC6),
+        foregroundColor: const Color(0XFF222222),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -49,143 +61,60 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_note, color: Colors.black, size: 28),
-            onPressed: () {},
+            icon: const Icon(Icons.refresh, color: Colors.black, size: 28),
+            onPressed: () {
+              _loadConversations();
+            },
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search conversations...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.grey[100],
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // search bar
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search conversations...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: Text(
-              'Chats',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              child: Text(
+                'Chats',
+                style: GoogleFonts.lora(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _conversations.length,
-              itemBuilder: (context, index) {
-                final chat = _conversations[index];
-                return ListTile(
-                  onTap: () {
-                    // Navigate to individual chat thread
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => DMScreen(chat: chat)),
-                    );
-                  },
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  leading: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: const Color(0XFF8789C0),
-                        child: Text(
-                          chat.name[0],
-                          style: const TextStyle(
-                            fontSize: 24,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      if (chat.isOnline)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  title: Text(
-                    chat.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  subtitle: Text(
-                    chat.lastMessage,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: chat.unreadCount > 0
-                          ? Colors.black87
-                          : Colors.grey[600],
-                      fontWeight: chat.unreadCount > 0
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        chat.time,
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      if (chat.unreadCount > 0)
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            '${chat.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
+            ChatSection(
+              title: 'New Chats',
+              conversations: _newConvos,
+              onRefresh: _loadConversations,
             ),
-          ),
-        ],
+            ChatSection(
+              title: 'Existing Chats',
+              conversations: _oldConvos,
+              onRefresh: _loadConversations,
+            ),
+          ],
+        ),
       ),
-      bottomNavigationBar: AppNavigationBar(currentIndex: 2), // add dm data
+      bottomNavigationBar: AppNavigationBar(currentIndex: 2),
     );
   }
 }

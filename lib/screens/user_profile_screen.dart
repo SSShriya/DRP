@@ -62,7 +62,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (accepted) {
       showDialog(
         context: context,
-        builder: (context) => CongratsPopup(matchName: card.title),
+        builder: (context) => CongratsPopup(match: card),
       ).then((_) {
         if (!mounted) return;
         setState(() {
@@ -92,7 +92,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_current.title),
         backgroundColor: const Color(0XFF84DCC6),
         foregroundColor: Colors.white,
       ),
@@ -102,10 +101,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             child: GestureDetector(
               onHorizontalDragEnd: (details) {
                 final velocity = details.primaryVelocity ?? 0;
-                if (velocity < -300 && _index < _cards.length - 1) {
-                  _goToPage(_index + 1);
-                } else if (velocity > 300 && _index > 0) {
-                  _goToPage(_index - 1);
+                if (velocity < -300) {
+                  // swipe left → next (wrap to 0 at end)
+                  _goToPage(_index < _cards.length - 1 ? _index + 1 : 0);
+                } else if (velocity > 300) {
+                  // swipe right → prev (wrap to last at start)
+                  _goToPage(_index > 0 ? _index - 1 : _cards.length - 1);
                 }
               },
               child: AnimatedSwitcher(
@@ -147,7 +148,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               radius: 40,
                               fontsize: 32,
                               random: false,
-                              img: _current.imageUrl.isNotEmpty ? _current.imageUrl : null,
+                              img: _current.imageUrl.isNotEmpty
+                                  ? _current.imageUrl
+                                  : null,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -271,10 +274,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton.icon(
-                  onPressed: _index > 0
-                      ? () => setState(() => _index--)
-                      : () => setState(() => _index = _cards.length - 1),
-                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () =>
+                      _goToPage(_index > 0 ? _index - 1 : _cards.length - 1),
                   label: const Text('Prev'),
                 ),
                 const SizedBox(width: 8),
@@ -297,9 +298,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
                 const SizedBox(width: 8),
                 TextButton.icon(
-                  onPressed: _index < _cards.length - 1
-                      ? () => setState(() => _index++)
-                      : () => setState(() => _index = 0),
+                  onPressed: () =>
+                      _goToPage(_index < _cards.length - 1 ? _index + 1 : 0),
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('Next'),
                 ),

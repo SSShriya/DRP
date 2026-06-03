@@ -9,6 +9,7 @@ import '../models/match_convo.dart';
 import '../widgets/interactive_card.dart';
 import '../screens/event_matches_screen.dart';
 import '../services/event_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0XFFF5F0F6),
       appBar: AppBar(
-        title: const Text('Welcome Back!'),
+        title: Text('Welcome Back!', style: GoogleFonts.lora(fontWeight: FontWeight.bold, fontSize: 25)),
         backgroundColor: const Color(0XFF84DCC6),
         foregroundColor: const Color(0XFF222222),
         actions: [
@@ -116,15 +117,15 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
             child: Text(
-              'Confirmed Matches by Event',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              'Your Upcoming Events',
+              style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
           SizedBox(
-            height: 180,
+            height: 140,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -141,31 +142,52 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
             child: Text(
               'Matches to Review',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
 
           // one MatchRow per event
-          if (groupedMatches.isEmpty)
+          if (_pendingMatches.isEmpty)
             const Padding(
               padding: EdgeInsets.all(32),
               child: Center(child: Text("You've reviewed everyone!!")),
             )
           else
-            for (final entry in groupedMatches.entries)
-              MatchRow(
-                cards: entry.value,
-                eventLabel: _interestedEvents
-                    .firstWhere(
-                      (e) => e.eventId == entry.key,
-                      orElse: () => _interestedEvents.first,
-                    )
-                    .title,
-                onTap: (i) => _openProfile(entry.value[i]),
+            for (final event in _interestedEvents)
+              (groupedMatches[event.eventId]?.isEmpty ?? true)
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          event.title,
+                          style: GoogleFonts.bitter(fontSize: 18, color: const Color.fromARGB(255, 89, 79, 79))
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'No matches yet, come back later',
+                          style: GoogleFonts.merriweather(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+              : MatchRow(
+                cards: groupedMatches[event.eventId] ?? [],
+                eventLabel: event.title,
+                onTap: (i) {
+                  final cards = groupedMatches[event.eventId] ?? [];
+                  if (cards.isNotEmpty) {
+                    _openProfile(cards[i]);
+                  }
+                },
               ),
 
           const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),

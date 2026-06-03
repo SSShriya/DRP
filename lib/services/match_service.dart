@@ -25,7 +25,7 @@ class MatchService {
     final rows = await supabase
         .from('matches')
         .select(
-          '*, events(event_name), user1:user1_id(id, name, university, course, bio, year_group, avatar_url, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, avatar_url, user_interests(interest))',
+          '*, events(event_name), user1:user1_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest))',
         )
         .inFilter('event_id', interestedEventIds)
         .or('user1_id.eq.$currentUserId,user2_id.eq.$currentUserId');
@@ -35,8 +35,8 @@ class MatchService {
     for (final row in rows as List) {
       final user1Id = row['user1_id'] as String;
       final user2Id = row['user2_id'] as String;
-      final user1Accepted = row['user1_accepted'] as bool? ?? false;
-      final user2Accepted = row['user2_accepted'] as bool? ?? false;
+      final user1Accepted = row['user1_accepted'] as bool?;
+      final user2Accepted = row['user2_accepted'] as bool?;
       final eventId = row['event_id'] as String;
       final eventName =
           (row['events'] as Map<String, dynamic>?)?['event_name'] as String? ??
@@ -45,7 +45,7 @@ class MatchService {
       final isUser1 = currentUserId == user1Id;
 
       final currentUserAccepted = isUser1 ? user1Accepted : user2Accepted;
-      if (currentUserAccepted) continue;
+      if (currentUserAccepted != null) continue;
 
       final otherUserData = isUser1
           ? row['user2'] as Map<String, dynamic>
@@ -64,6 +64,7 @@ class MatchService {
           interests: (otherUserData['user_interests'] as List<dynamic>? ?? [])
               .map((i) => i['interest'] as String)
               .toList(),
+          location: otherUserData['location'] ?? '',
           imageUrl: otherUserData['avatar_url'] ?? '',
         ),
       );
@@ -98,7 +99,7 @@ class MatchService {
     final rows = await supabase
         .from('matches')
         .select(
-          'events(event_name), user1:user1_id(id, name, university, course, bio, year_group, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, user_interests(interest))',
+          'events(event_name), user1:user1_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest))',
         )
         .eq('event_id', eventId)
         .eq('user1_accepted', true)
@@ -128,22 +129,28 @@ class MatchService {
         interests: (otherUser['user_interests'] as List<dynamic>? ?? [])
             .map((i) => i['interest'] as String)
             .toList(),
+        location: (otherUser['location']) ?? '',
+        imageUrl: otherUser['avatar_url'] ?? '',
       );
     }).toList();
   }
 
   Future<void> uploadProfilePicture(File imageFile, String userId) async {
-      final String filePath = '$userId/profile.jpg';
-    
-      await supabase.storage.from('avatars').upload(
+    final String filePath = '$userId/profile.jpg';
+
+    await supabase.storage
+        .from('avatars')
+        .upload(
           filePath,
           imageFile,
           fileOptions: const FileOptions(upsert: true),
         );
 
-      final String publicUrl = supabase.storage.from('avatars').getPublicUrl(filePath);
+    final String publicUrl = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
 
-      await supabase
+    await supabase
         .from('users')
         .update({'avatar_url': publicUrl})
         .eq('id', userId);
@@ -151,8 +158,8 @@ class MatchService {
 
   Future<String?> getProfilePictureUrl(String userId) async {
     final String publicUrl = supabase.storage
-      .from('avatars')
-      .getPublicUrl('$userId/profile.jpg');
+        .from('avatars')
+        .getPublicUrl('$userId/profile.jpg');
 
     return publicUrl;
   }
