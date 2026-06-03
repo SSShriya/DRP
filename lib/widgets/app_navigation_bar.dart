@@ -1,5 +1,6 @@
 import 'package:drp/screens/events_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../screens/dm_home_screen.dart';
 
 class AppNavigationBar extends StatelessWidget {
@@ -14,6 +15,14 @@ class AppNavigationBar extends StatelessWidget {
       currentIndex: currentIndex,
       selectedItemColor: const Color(0xFFEBA6A9),
       unselectedItemColor: Colors.grey,
+      selectedLabelStyle: GoogleFonts.montserrat(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+
+      unselectedLabelStyle: GoogleFonts.montserrat(
+        fontSize: 12,
+      ),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Events'),

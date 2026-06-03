@@ -9,6 +9,7 @@ import '../models/match_convo.dart';
 import '../widgets/interactive_card.dart';
 import '../screens/event_matches_screen.dart';
 import '../services/event_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0XFFF5F0F6),
       appBar: AppBar(
-        title: const Text('Welcome Back!'),
+        title: Text('Welcome Back!', style: GoogleFonts.lora(fontWeight: FontWeight.bold, fontSize: 25)),
         backgroundColor: const Color(0XFF84DCC6),
         foregroundColor: const Color(0XFF222222),
         actions: [
@@ -116,11 +117,11 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
             child: Text(
               'Confirmed Matches by Event',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
           SizedBox(
@@ -141,11 +142,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
             child: Text(
               'Matches to Review',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
 
@@ -165,12 +166,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           event.title,
-                          style: const TextStyle(fontSize: 16, color: Colors.grey)
+                          style: GoogleFonts.bitter(fontSize: 16, color: Colors.grey)
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'No matches yet, come back later',
-                          style: TextStyle(
+                          style: GoogleFonts.merriweather(
                             fontSize: 14,
                             color: Colors.grey[600],
                           ),

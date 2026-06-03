@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/match_card.dart';
 import 'interactive_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class MatchRow extends StatelessWidget {
   final List<MatchCard> cards;
@@ -23,7 +24,7 @@ class MatchRow extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 4, 10),
           child: Text(
             eventLabel,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: GoogleFonts.bitter(fontSize: 16, color: Colors.grey),
           ),
         ),
         SizedBox(

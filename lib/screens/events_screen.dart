@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/event_card.dart';
 import '../widgets/interactive_card.dart';
 import '../services/event_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -81,6 +82,10 @@ class _EventsScreenState extends State<EventsScreen> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search events...',
+                      hintStyle: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -114,11 +119,11 @@ class _EventsScreenState extends State<EventsScreen> {
 
                 // Events Section
                 if (_filteredEvents.isNotEmpty) ...[
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
                     child: Text(
                       'All Events',
-                      style: TextStyle(
+                      style: GoogleFonts.lora(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -154,7 +159,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           const SizedBox(height: 16),
                           Text(
                             'No events found',
-                            style: TextStyle(
+                            style: GoogleFonts.montserrat(
                               fontSize: 16,
                               color: Colors.grey[600],
                             ),
