@@ -16,6 +16,7 @@ class ChatSection extends StatelessWidget {
   Widget build(BuildContext context) {
       return ExpansionTile(
             title: Text(title),
+            initiallyExpanded: true,
             children: [
               ListView.builder(
                 shrinkWrap: true,
