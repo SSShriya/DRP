@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/event_card.dart';
 import '../services/registration_service.dart';
 import '../widgets/app_navigation_bar.dart';
+import 'package:intl/intl.dart';
 
 class EventProfileScreen extends StatefulWidget {
   final EventCard card;
@@ -82,7 +83,9 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
                           const Icon(Icons.access_time, size: 16, color: Colors.grey),
                           const SizedBox(width: 4),
                           Text(
-                            widget.card.startDateTime.toString() + widget.card.endDateTime.toString(),
+                            '${DateFormat('d MMM').format(widget.card.startDateTime)}  ·  '
+                            '${DateFormat('HH:mm').format(widget.card.startDateTime)}'
+                            '-${DateFormat('HH:mm').format(widget.card.endDateTime)}',
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.grey,
