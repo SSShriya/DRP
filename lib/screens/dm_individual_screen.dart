@@ -15,7 +15,7 @@ class DMScreen extends StatefulWidget {
 class _DMScreenState extends State<DMScreen> {
   final TextEditingController _controller = TextEditingController();
   final ConversationService _conversationService = ConversationService();
-  final String myUserId = 'me';
+  late final String myUserId;
   List<String> messages = [];
   List<_Message> _messages = [];
   bool _isLoading = true;
@@ -23,22 +23,21 @@ class _DMScreenState extends State<DMScreen> {
   @override
   void initState() {
     super.initState();
+    myUserId = _conversationService.currentUserId;
     _loadMessages();
   }
 
-/*
-  Future<void> _loadMessages() async {
-    messages = await _conversationService.getMessages(myUserId, widget.chat.otherUserId) ?? [];
-    setState(() {
-          _messages = messages.map((m) => _Message(text: m, fromMe: true)).toList();
-    });
-  }*/
-
   Future<void> _loadMessages() async {
     try {
-      final fetchedStrings = await _conversationService.getMessages(myUserId, widget.chat.otherUserId);
+      final fetchedMaps = await _conversationService.getMessages(myUserId, widget.chat.otherUserId);
       setState(() {
-        messages = fetchedStrings ?? [];
+        _messages = fetchedMaps.map((row) {
+          final senderId = row['sender_id'] as String;
+          return _Message(
+            text: row['content'] ?? '',
+            fromMe: senderId == myUserId,
+          );
+        }).toList();
         // Map strings over to your custom visual _Message objects
         _messages = messages.map((m) => _Message(text: m, fromMe: true)).toList();
         _isLoading = false; // Loading complete!

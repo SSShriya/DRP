@@ -40,19 +40,19 @@ class ConversationService {
   Future<void> recordMessage(String message, String sender, String receiver) async {
     await supabase.from('messages').insert({
       'sender_id': sender,
-      'receiver_id': receiver,
+      'recipient_id': receiver,
       'content': message,
     });
   }
 
-  Future<List<String>> getMessages(String thisUserId, String otherUserId) async {
+  Future<List<Map<String, dynamic>>> getMessages(String thisUserId, String otherUserId) async {
     final rows = await supabase
-        .from('messages')
-        .select()
-        .or('sender_id.eq.$thisUserId, sender_id.eq.$otherUserId')
-        .or('receiver_id.eq.$thisUserId, receiver_id.eq.$otherUserId')
-        .order('created_at', ascending: true);
+      .from('messages')
+      .select()
+      .or('sender_id.eq.$thisUserId, sender_id.eq.$otherUserId')
+      .or('recipient_id.eq.$thisUserId, recipient_id.eq.$otherUserId')
+      .order('created_at', ascending: true);
 
-    return (rows as List).map((r) => r['content'] as String).toList();
+    return List<Map<String, dynamic>>.from(rows);
   }
 }
