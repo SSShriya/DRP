@@ -6,8 +6,14 @@ import 'home_screen.dart';
 
 class CongratsPopup extends StatelessWidget {
   final MatchCard match;
+  final String currentUserId = '5f7e9d61-3865-47b2-9155-202267ee947f';
 
   const CongratsPopup({super.key, required this.match});
+
+  String otherUserId() {
+    final ids = match.id.split('|');
+    return ids[0] == currentUserId ? ids[1] : ids[0];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +58,11 @@ class CongratsPopup extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => DMScreen(
-                      chat: ChatConversation(name: match.name, otherUserId: match.id, interests: []),
+                      chat: ChatConversation(
+                        name: match.name, 
+                        otherUserId: otherUserId(), 
+                        interests: match.interests
+                        ),
                     ),
                   ),
                 );
