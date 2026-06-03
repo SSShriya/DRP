@@ -10,6 +10,7 @@ class EventService {
   final String currentUserId = '5f7e9d61-3865-47b2-9155-202267ee947f';
 
   Future<List<EventCard>> getInterestedEvents() async {
+    // get interested events
     final rows = await supabase
         .from('interested_events')
         .select(
@@ -17,18 +18,42 @@ class EventService {
         )
         .eq('user_id', currentUserId);
 
-    return (rows as List).map((row) {
+    final eventIds = (rows as List)
+        .map((r) => (r['events'] as Map<String, dynamic>)['event_id'] as String)
+        .toList();
+
+    if (eventIds.isEmpty) return [];
+
+    // fetch all confirmed match counts
+    final matchCounts = await supabase
+        .from('matches')
+        .select('event_id')
+        .inFilter('event_id', eventIds)
+        .eq('user1_accepted', true)
+        .eq('user2_accepted', true)
+        .or('user1_id.eq.$currentUserId,user2_id.eq.$currentUserId');
+
+    // build a map of eventId to count
+    final countMap = <String, int>{};
+    for (final row in matchCounts as List) {
+      final eventId = row['event_id'] as String;
+      countMap[eventId] = (countMap[eventId] ?? 0) + 1;
+    }
+
+    // build EventCards using the count map
+    return rows.map((row) {
       final e = row['events'] as Map<String, dynamic>;
+      final eventId = e['event_id'] as String;
 
       return EventCard(
-        eventId: e['event_id'],
         title: e['event_name'] ?? '',
         subtitle: e['description'] ?? '',
-        numMatches: 0,
+        numMatches: countMap[eventId] ?? 0,
         startDateTime: _parseDateTime(e['start_day'], e['start_time']),
         endDateTime: _parseDateTime(e['end_day'], e['end_time']),
         location: e['location'] ?? '',
         cost: (e['cost'] as num?)?.toDouble() ?? 0.0,
+        eventId: eventId,
         icon: Icons.event,
         color: const Color(0XFFFED766),
       );
