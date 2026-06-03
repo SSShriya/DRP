@@ -55,7 +55,6 @@ class _DMScreenState extends State<DMScreen> {
     setState(() {
       _messages.add(_Message(text: text, fromMe: true));
       _conversationService.recordMessage(text, myUserId, widget.chat.otherUserId);
-      widget.chat.numMessages += 1;
     });
     _controller.clear();
   }

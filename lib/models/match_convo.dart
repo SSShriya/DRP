@@ -16,6 +16,7 @@ class ChatConversation {
     this.time = '',
     this.unreadCount = 0,
     this.isOnline = false,
+    this.numMessages = 0,
   });
 }
 
