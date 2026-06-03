@@ -55,6 +55,12 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black, size: 28),
+            onPressed: () {
+              _loadConversations();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.edit_note, color: Colors.black, size: 28),
             onPressed: () {},
           ),

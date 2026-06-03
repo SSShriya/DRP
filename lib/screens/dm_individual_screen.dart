@@ -39,7 +39,6 @@ class _DMScreenState extends State<DMScreen> {
           );
         }).toList();
         // Map strings over to your custom visual _Message objects
-        _messages = messages.map((m) => _Message(text: m, fromMe: true)).toList();
         _isLoading = false; // Loading complete!
       });
     } catch (e) {
