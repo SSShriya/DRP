@@ -11,6 +11,22 @@ class MatchService {
   final String currentUserId = '5f7e9d61-3865-47b2-9155-202267ee947f';
 
   Future<List<MatchCard>> getPendingMatches() async {
+    // fetch current user's profile
+    final currentUserData = await supabase
+        .from('users')
+        .select('university, course, location, user_interests(interest)')
+        .eq('id', currentUserId)
+        .single();
+
+    final currentUniversity = (currentUserData['university'] as String?) ?? '';
+    final currentCourse = (currentUserData['course'] as String?) ?? '';
+    final currentLocation = (currentUserData['location'] as String?) ?? '';
+    final currentInterests =
+        (currentUserData['user_interests'] as List<dynamic>? ?? [])
+            .map((i) => i['interest'] as String)
+            .toSet();
+
+    // fetch events the current user is interested in
     final interestedEventsData = await supabase
         .from('interested_events')
         .select('event_id')
@@ -22,6 +38,7 @@ class MatchService {
 
     if (interestedEventIds.isEmpty) return [];
 
+    // fetch matches
     final rows = await supabase
         .from('matches')
         .select(
@@ -30,7 +47,7 @@ class MatchService {
         .inFilter('event_id', interestedEventIds)
         .or('user1_id.eq.$currentUserId,user2_id.eq.$currentUserId');
 
-    final matches = <MatchCard>[];
+    final matches = <(MatchCard, int)>[]; // store card + score together
 
     for (final row in rows as List) {
       final user1Id = row['user1_id'] as String;
@@ -43,7 +60,6 @@ class MatchService {
           '';
 
       final isUser1 = currentUserId == user1Id;
-
       final currentUserAccepted = isUser1 ? user1Accepted : user2Accepted;
       if (currentUserAccepted != null) continue;
 
@@ -51,7 +67,101 @@ class MatchService {
           ? row['user2'] as Map<String, dynamic>
           : row['user1'] as Map<String, dynamic>;
 
-      matches.add(
+      final otherInterests =
+          (otherUserData['user_interests'] as List<dynamic>? ?? [])
+              .map((i) => i['interest'] as String)
+              .toSet();
+
+      // score the match
+      int score = 0;
+
+      // +1 per shared interest
+      score += currentInterests.intersection(otherInterests).length;
+
+      // +1 for shared university
+      final otherUniversity = (otherUserData['university'] as String?) ?? '';
+      if (currentUniversity.isNotEmpty &&
+          otherUniversity.isNotEmpty &&
+          currentUniversity.toLowerCase() == otherUniversity.toLowerCase()) {
+        score += 1;
+      }
+
+      // +1 for shared course/degree
+      final otherCourse = (otherUserData['course'] as String?) ?? '';
+      if (currentCourse.isNotEmpty &&
+          otherCourse.isNotEmpty &&
+          currentCourse.toLowerCase() == otherCourse.toLowerCase()) {
+        score += 1;
+      }
+
+      // +1 for shared location
+      final otherLocation = (otherUserData['location'] as String?) ?? '';
+      if (currentLocation.isNotEmpty &&
+          otherLocation.isNotEmpty &&
+          currentLocation.toLowerCase() == otherLocation.toLowerCase()) {
+        score += 1;
+      }
+
+      // filter: only include score >= 2
+      if (score < 1) continue;
+
+      matches.add((
+        MatchCard(
+          id: '$user1Id|$user2Id|$eventId',
+          title: otherUserData['name'] ?? 'Unknown',
+          university: otherUniversity,
+          course: otherCourse,
+          bio: otherUserData['bio'] ?? '',
+          eventId: eventId,
+          eventName: eventName,
+          yearGroup: otherUserData['year_group'] ?? '',
+          interests: otherInterests.toList(),
+          location: otherLocation,
+          imageUrl: otherUserData['avatar_url'] ?? '',
+        ),
+        score,
+      ));
+    }
+
+    // sort descending by score
+    matches.sort((a, b) => b.$2.compareTo(a.$2));
+
+    return matches.map((e) => e.$1).toList();
+  }
+
+  // Matches where current user accepted, other user hasn't decided yet
+  Future<List<MatchCard>> getAwaitingResponseMatches() async {
+    final rows = await supabase
+        .from('matches')
+        .select(
+          '*, events(event_name), user1:user1_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest))',
+        )
+        .or('user1_id.eq.$currentUserId,user2_id.eq.$currentUserId');
+
+    final waiting = <MatchCard>[];
+
+    for (final row in rows as List) {
+      final user1Id = row['user1_id'] as String;
+      final user2Id = row['user2_id'] as String;
+      final user1Accepted = row['user1_accepted'] as bool?;
+      final user2Accepted = row['user2_accepted'] as bool?;
+      final eventId = row['event_id'] as String;
+      final eventName =
+          (row['events'] as Map<String, dynamic>?)?['event_name'] as String? ??
+          '';
+
+      final isUser1 = currentUserId == user1Id;
+      final iAccepted = isUser1 ? user1Accepted : user2Accepted;
+      final theyAccepted = isUser1 ? user2Accepted : user1Accepted;
+
+      // I said yes, they haven't answered yet
+      if (iAccepted != true || theyAccepted != null) continue;
+
+      final otherUserData = isUser1
+          ? row['user2'] as Map<String, dynamic>
+          : row['user1'] as Map<String, dynamic>;
+
+      waiting.add(
         MatchCard(
           id: '$user1Id|$user2Id|$eventId',
           title: otherUserData['name'] ?? 'Unknown',
@@ -70,59 +180,8 @@ class MatchService {
       );
     }
 
-    return matches;
+    return waiting;
   }
-
-  // Matches where current user accepted, other user hasn't decided yet
-  Future<List<MatchCard>> getAwaitingResponseMatches() async {
-  final rows = await supabase
-      .from('matches')
-      .select(
-        '*, events(event_name), user1:user1_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest))',
-      )
-      .or('user1_id.eq.$currentUserId,user2_id.eq.$currentUserId');
-
-  final waiting = <MatchCard>[];
-
-  for (final row in rows as List) {
-    final user1Id = row['user1_id'] as String;
-    final user2Id = row['user2_id'] as String;
-    final user1Accepted = row['user1_accepted'] as bool?;
-    final user2Accepted = row['user2_accepted'] as bool?;
-    final eventId = row['event_id'] as String;
-    final eventName =
-        (row['events'] as Map<String, dynamic>?)?['event_name'] as String? ?? '';
-
-    final isUser1 = currentUserId == user1Id;
-    final iAccepted = isUser1 ? user1Accepted : user2Accepted;
-    final theyAccepted = isUser1 ? user2Accepted : user1Accepted;
-
-    // I said yes, they haven't answered yet
-    if (iAccepted != true || theyAccepted != null) continue;
-
-    final otherUserData = isUser1
-        ? row['user2'] as Map<String, dynamic>
-        : row['user1'] as Map<String, dynamic>;
-
-    waiting.add(MatchCard(
-      id: '$user1Id|$user2Id|$eventId',
-      title: otherUserData['name'] ?? 'Unknown',
-      university: otherUserData['university'] ?? '',
-      course: otherUserData['course'] ?? '',
-      bio: otherUserData['bio'] ?? '',
-      eventId: eventId,
-      eventName: eventName,
-      yearGroup: otherUserData['year_group'] ?? '',
-      interests: (otherUserData['user_interests'] as List<dynamic>? ?? [])
-          .map((i) => i['interest'] as String)
-          .toList(),
-      location: otherUserData['location'] ?? '',
-      imageUrl: otherUserData['avatar_url'] ?? '',
-    ));
-  }
-
-  return waiting;
-}
 
   Future<void> recordDecision(String matchId, bool accepted) async {
     final parts = matchId.split('|');

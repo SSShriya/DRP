@@ -380,7 +380,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'No matches yet, come back later',
+                        'No potential matches yet, come back later',
                         style: GoogleFonts.merriweather(
                           fontSize: 14,
                           color: Colors.grey[600],
