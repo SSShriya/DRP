@@ -295,10 +295,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                TextButton.icon(
+                TextButton(
                   onPressed: () =>
                       _goToPage(_index > 0 ? _index - 1 : _cards.length - 1),
-                  label: const Text('Prev'),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_back),
+                      SizedBox(width: 4),
+                      Text('Prev'),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 TextButton(
@@ -319,11 +326,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   child: const Text('✓'),
                 ),
                 const SizedBox(width: 8),
-                TextButton.icon(
+                TextButton(
                   onPressed: () =>
                       _goToPage(_index < _cards.length - 1 ? _index + 1 : 0),
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Next'),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Next'),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward),
+                    ],
+                  ),
                 ),
               ],
             ),
