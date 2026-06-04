@@ -23,13 +23,6 @@ class CongratsPopup extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
             const Text(
               'CONGRATS',
               style: TextStyle(
@@ -58,12 +51,12 @@ class CongratsPopup extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => DMScreen(
                       chat: ChatConversation(
-                        name: match.name, 
-                        otherUserId: otherUserId(), 
+                        name: match.name,
+                        otherUserId: otherUserId(),
                         event: match.eventName,
                         interests: match.interests,
                         imageUrl: match.imageUrl,
-                        ),
+                      ),
                     ),
                   ),
                 );
@@ -114,4 +107,4 @@ class CongratsPopup extends StatelessWidget {
       ),
     );
   }
-} 
+}
