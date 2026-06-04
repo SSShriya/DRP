@@ -143,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 0),
             child: Text(
               'Matches to Review',
               style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold),
