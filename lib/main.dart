@@ -4,7 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
 
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
 final String currentUserId = '5f7e9d61-3865-47b2-9155-202267ee947f';
 
 void main() async {
@@ -23,9 +24,6 @@ class MainApp extends StatelessWidget {
   const MainApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorObservers: [routeObserver],
-      home: HomeScreen()
-      );
+    return MaterialApp(navigatorObservers: [routeObserver], home: HomeScreen());
   }
 }

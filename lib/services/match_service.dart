@@ -129,6 +129,28 @@ class MatchService {
     return matches.map((e) => e.$1).toList();
   }
 
+  // check if other user has accepted your match
+  Future<bool> hasOtherUserAccepted(String matchId) async {
+    final parts = matchId.split('|');
+    final user1Id = parts[0];
+    final user2Id = parts[1];
+    final eventId = parts[2];
+
+    final row = await supabase
+        .from('matches')
+        .select('user1_accepted, user2_accepted')
+        .eq('user1_id', user1Id)
+        .eq('user2_id', user2Id)
+        .eq('event_id', eventId)
+        .single();
+
+    final otherAccepted = currentUserId == user1Id
+        ? row['user2_accepted'] as bool?
+        : row['user1_accepted'] as bool?;
+
+    return otherAccepted == true;
+  }
+
   // Matches where current user accepted, other user hasn't decided yet
   Future<List<MatchCard>> getAwaitingResponseMatches() async {
     final rows = await supabase

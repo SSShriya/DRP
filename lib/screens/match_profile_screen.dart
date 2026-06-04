@@ -2,6 +2,7 @@ import 'package:drp/widgets/congrats_popup.dart';
 import 'package:drp/widgets/user_profile_card.dart';
 import 'package:flutter/material.dart';
 import '../models/match_card.dart';
+import '../services/match_service.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -25,6 +26,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   late int _index;
   bool _isAnimating = false;
   bool _goingForward = true;
+
+  // ── Service — the only thing that talks to the DB ──
+  final _matchService = MatchService();
 
   @override
   void initState() {
@@ -54,9 +58,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (!mounted) return;
 
     if (accepted) {
+      // ── Delegate DB check entirely to the service ──
+      final isMutual = await _matchService.hasOtherUserAccepted(card.id);
+      if (!mounted) return;
+
       showDialog(
         context: context,
-        builder: (context) => CongratsPopup(match: card),
+        builder: (context) => CongratsPopup(match: card, isMutual: isMutual),
       ).then((_) {
         if (!mounted) return;
         setState(() {
@@ -131,7 +139,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     child: child,
                   );
                 },
-                // ── Just use UserProfileCard here now ──
                 child: KeyedSubtree(
                   key: ValueKey(_index),
                   child: UserProfileCard(card: _current),

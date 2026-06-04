@@ -2,17 +2,12 @@ import 'package:drp/models/match_card.dart';
 import 'package:drp/models/match_convo.dart';
 import 'package:drp/screens/dm_individual_screen.dart';
 import 'package:flutter/material.dart';
-import '../main.dart';
 
 class CongratsPopup extends StatelessWidget {
   final MatchCard match;
+  final bool isMutual;
 
-  const CongratsPopup({super.key, required this.match});
-
-  String otherUserId() {
-    final ids = match.id.split('|');
-    return ids[0] == currentUserId ? ids[1] : ids[0];
-  }
+  const CongratsPopup({super.key, required this.match, required this.isMutual});
 
   @override
   Widget build(BuildContext context) {
@@ -32,72 +27,106 @@ class CongratsPopup extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              "You've matched with",
+            const Text(
+              "You've accepted",
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
-              match.name.toUpperCase(),
+              match.title.toUpperCase(),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
+
+            // ── DM or waiting message ──
+            if (isMutual)
+              _button(
+                label: 'DM Now',
+                onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        DMScreen(chat: ChatConversation(matchCard: match)),
+                    builder: (_) {
+                      // ── Extract plain user ID from composite match ID ──
+                      final parts = match.id.split('|');
+                      final currentUserId =
+                          '5f7e9d61-3865-47b2-9155-202267ee947f';
+                      final otherUserId = parts[0] == currentUserId
+                          ? parts[1]
+                          : parts[0];
+
+                      // ── Build a clean MatchCard with just the plain user ID ──
+                      final dmCard = MatchCard(
+                        id: otherUserId,
+                        title: match.title,
+                        university: match.university,
+                        course: match.course,
+                        bio: match.bio,
+                        eventId: match.eventId,
+                        eventName: match.eventName,
+                        yearGroup: match.yearGroup,
+                        interests: match.interests,
+                        location: match.location,
+                        imageUrl: match.imageUrl,
+                      );
+
+                      return DMScreen(
+                        chat: ChatConversation(matchCard: dmCard),
+                      );
+                    },
                   ),
-                );
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: const Color(0XFF8789C0),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
                 ),
+              )
+            else
+              Column(
+                children: [
+                  const Icon(
+                    Icons.hourglass_top,
+                    color: Color(0XFF8789C0),
+                    size: 28,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Waiting for ${match.title} to accept...\nYou'll be able to DM once they do!",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ),
-              child: const Text('DM Now'),
+
+            const SizedBox(height: 12),
+            _button(
+              label: 'Next Match',
+              onPressed: () => Navigator.pop(context),
             ),
             const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: const Color(0XFF8789C0),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-              child: const Text('Next Match'),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
+            _button(
+              label: 'Back to Home',
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
-              style: TextButton.styleFrom(
-                backgroundColor: const Color(0XFF8789C0),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-              child: const Text('Back to Home'),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _button({required String label, required VoidCallback onPressed}) {
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        backgroundColor: const Color(0XFF8789C0),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      ),
+      child: Text(label),
     );
   }
 }
