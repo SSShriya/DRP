@@ -5,13 +5,19 @@ import 'package:intl/intl.dart';
 import '../models/event_card.dart';
 import '../models/match_card.dart';
 import '../services/match_service.dart';
-import 'event_profile_screen.dart'; 
+import 'event_profile_screen.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class EventMatchesScreen extends StatefulWidget {
+  final List<EventCard> allEvents;
   final EventCard event;
 
-  const EventMatchesScreen({super.key, required this.event});
+  const EventMatchesScreen({
+    super.key,
+    required this.allEvents,
+    required this.event,
+  });
 
   @override
   State<EventMatchesScreen> createState() => _EventMatchesScreenState();
@@ -19,50 +25,69 @@ class EventMatchesScreen extends StatefulWidget {
 
 class _EventMatchesScreenState extends State<EventMatchesScreen> {
   final _matchService = MatchService();
-  List<MatchCard> _matches = [];
-  bool _loading = true;
+  final Map<String, List<MatchCard>> _matchesByEvent = {};
+  final Map<String, bool> _loadingByEvent = {};
+
+  late int _currentPage;
+  bool _goingForward = true;
+  bool _isAnimating = false;
 
   @override
   void initState() {
     super.initState();
-    _loadMatches();
+    _currentPage = widget.allEvents.indexWhere(
+      (e) => e.eventId == widget.event.eventId,
+    );
+    if (_currentPage < 0) _currentPage = 0;
+
+    for (final event in widget.allEvents) {
+      _loadMatchesFor(event.eventId);
+    }
   }
 
-  Future<void> _loadMatches() async {
-    final matches = await _matchService.getConfirmedMatchesForEvent(
-      widget.event.eventId,
-    );
+  Future<void> _loadMatchesFor(String eventId) async {
+    setState(() => _loadingByEvent[eventId] = true);
+    final matches = await _matchService.getConfirmedMatchesForEvent(eventId);
     setState(() {
-      _matches = matches;
-      _loading = false;
+      _matchesByEvent[eventId] = matches;
+      _loadingByEvent[eventId] = false;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0XFFF5F0F6),
-      appBar: AppBar(
-        title: Text(widget.event.title),
-        backgroundColor: widget.event.color,
-        foregroundColor: const Color(0xFF222222),
-        elevation: 0,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+  void _goToPage(int newIndex, {bool goingForward = true}) {
+    if (_isAnimating) return;
+    _isAnimating = true;
+    setState(() {
+      _goingForward = goingForward;
+      _currentPage = newIndex;
+    });
+    Future.delayed(
+      const Duration(milliseconds: 300),
+      () => _isAnimating = false,
+    );
+  }
+
+  Widget _buildEventPage(EventCard event) {
+    final matches = _matchesByEvent[event.eventId] ?? [];
+    final loading = _loadingByEvent[event.eventId] ?? true;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Event Info Card ──
           GestureDetector(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => EventProfileScreen(card: widget.event),
+                builder: (context) => EventProfileScreen(card: event),
+              ),
             ),
-          ),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: widget.event.color,
+                color: event.color,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -71,14 +96,14 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                   Row(
                     children: [
                       Icon(
-                        widget.event.icon,
+                        event.icon,
                         color: const Color(0xFF222222),
                         size: 32,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          widget.event.title,
+                          event.title,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -90,7 +115,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.event.subtitle,
+                    event.subtitle,
                     style: TextStyle(
                       fontSize: 15,
                       color: const Color(0xFF222222).withValues(alpha: 0.8),
@@ -110,7 +135,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                       Text(
                         DateFormat(
                           'EEEE, d MMMM yyyy',
-                        ).format(widget.event.startDateTime),
+                        ).format(event.startDateTime),
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF222222),
@@ -128,7 +153,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${DateFormat('HH:mm').format(widget.event.startDateTime)} - ${DateFormat('HH:mm').format(widget.event.endDateTime)}',
+                        '${DateFormat('HH:mm').format(event.startDateTime)} - ${DateFormat('HH:mm').format(event.endDateTime)}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF222222),
@@ -147,7 +172,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          widget.event.location,
+                          event.location,
                           style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF222222),
@@ -159,14 +184,14 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                   const SizedBox(height: 4),
                 ],
               ),
-            )
+            ),
           ),
 
           const SizedBox(height: 24),
 
           // ── Matches Section ──
           Text(
-            '${_matches.length} ${_matches.length == 1 ? 'Match' : 'Matches'}',
+            '${matches.length} ${matches.length == 1 ? 'Match' : 'Matches'}',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -175,9 +200,9 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
           ),
           const SizedBox(height: 8),
 
-          if (_loading)
+          if (loading)
             const Center(child: CircularProgressIndicator())
-          else if (_matches.isEmpty)
+          else if (matches.isEmpty)
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(32),
@@ -189,8 +214,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
               ),
             )
           else
-            // ── Match Cards ──
-            ..._matches.map(
+            ...matches.map(
               (match) => Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
@@ -207,8 +231,6 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                 ),
                 child: Row(
                   children: [
-                    // ── Avatar ──
-                    // Replace CircleAvatar with:
                     ProfilePicture(
                       name: match.title,
                       radius: 28,
@@ -217,12 +239,10 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                       img: match.imageUrl.isNotEmpty ? match.imageUrl : null,
                     ),
                     const SizedBox(width: 12),
-                    // ── Details ──
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ── Name ──
                           Text(
                             match.title,
                             style: const TextStyle(
@@ -234,8 +254,6 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-
-                          // ── Year · University · Course ──
                           if (match.yearGroup.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Row(
@@ -264,8 +282,6 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                               ],
                             ),
                           ],
-
-                          // ── Location ──
                           if (match.location.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Row(
@@ -294,8 +310,6 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                               ],
                             ),
                           ],
-
-                          // ── Interests ──
                           if (match.interests.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Wrap(
@@ -335,37 +349,129 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => DMScreen(
-                                chat: ChatConversation(
-                                  name: match.title, 
-                                  otherUserId: match.id, 
-                                  event: widget.event.title, 
-                                  interests: match.interests, 
-                                  imageUrl: match.imageUrl)
-                                ),
-                          )
+                            builder: (context) => DMScreen(
+                              chat: ChatConversation(
+                                name: match.title,
+                                otherUserId: match.id,
+                                event: event.title,
+                                interests: match.interests,
+                                imageUrl: match.imageUrl,
+                              ),
+                            ),
+                          ),
                         );
-                      }, 
+                      },
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: const Color(0XFFEEC0C6).withValues(alpha: 0.5),
-                        side: const BorderSide(color: Color(0XFFEEC0C6), width: 2),
+                        backgroundColor: const Color(
+                          0XFFEEC0C6,
+                        ).withValues(alpha: 0.5),
+                        side: const BorderSide(
+                          color: Color(0XFFEEC0C6),
+                          width: 2,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: Text(
-                        "DM",
-                        style: const TextStyle(
+                      child: const Text(
+                        'DM',
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color.fromARGB(255, 17, 17, 17)
-                        )
-                      )
-                    )
+                          color: Color.fromARGB(255, 17, 17, 17),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentEvent = widget.allEvents[_currentPage];
+
+    return Scaffold(
+      backgroundColor: const Color(0XFFF5F0F6),
+      appBar: AppBar(
+        title: Text(currentEvent.title),
+        backgroundColor: currentEvent.color,
+        foregroundColor: const Color(0xFF222222),
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          // ── AnimatedSwitcher handles circular swipe with correct direction ──
+          Expanded(
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                if (velocity < -300) {
+                  _goToPage(
+                    _currentPage < widget.allEvents.length - 1
+                        ? _currentPage + 1
+                        : 0,
+                    goingForward: true,
+                  );
+                } else if (velocity > 300) {
+                  _goToPage(
+                    _currentPage > 0
+                        ? _currentPage - 1
+                        : widget.allEvents.length - 1,
+                    goingForward: false,
+                  );
+                }
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                layoutBuilder: (currentChild, _) =>
+                    currentChild ?? const SizedBox(),
+                transitionBuilder: (child, animation) {
+                  final isEntering = child.key == ValueKey(_currentPage);
+                  final beginOffset = isEntering
+                      ? Offset(_goingForward ? 1.0 : -1.0, 0.0)
+                      : Offset(_goingForward ? -1.0 : 1.0, 0.0);
+                  return SlideTransition(
+                    position:
+                        Tween<Offset>(
+                          begin: beginOffset,
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOut,
+                          ),
+                        ),
+                    child: child,
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey(_currentPage),
+                  child: _buildEventPage(currentEvent),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Worm indicator ──
+          if (widget.allEvents.length > 1) ...[
+            const SizedBox(height: 12),
+            AnimatedSmoothIndicator(
+              activeIndex: _currentPage,
+              count: widget.allEvents.length,
+              effect: const WormEffect(
+                dotHeight: 8,
+                dotWidth: 8,
+                activeDotColor: Color(0XFF84DCC6),
+                dotColor: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
         ],
       ),
     );

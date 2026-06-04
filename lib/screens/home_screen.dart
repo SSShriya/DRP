@@ -41,14 +41,16 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this); // 👈 Critical: Always clean up to prevent memory leaks!
+    routeObserver.unsubscribe(
+      this,
+    ); // 👈 Critical: Always clean up to prevent memory leaks!
     super.dispose();
   }
 
   @override
   void didPopNext() {
-      debugPrint('Returned to Home Screen via pop. Refreshing data...');
-      _loadMatches(); 
+    debugPrint('Returned to Home Screen via pop. Refreshing data...');
+    _loadMatches();
   }
 
   Future<void> _loadMatches() async {
@@ -127,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       endDrawer: Drawer(
         backgroundColor: const Color(0xFFF5F0F6),
         child: SafeArea(
-          child:Padding(
+          child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -231,13 +233,15 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   ),
               ],
             ),
-          )
-        )
+          ),
+        ),
       ),
 
-
       appBar: AppBar(
-        title: Text('Welcome Back!', style: GoogleFonts.lora(fontWeight: FontWeight.bold, fontSize: 25)),
+        title: Text(
+          'Welcome Back!',
+          style: GoogleFonts.lora(fontWeight: FontWeight.bold, fontSize: 25),
+        ),
         backgroundColor: const Color(0XFF84DCC6),
         foregroundColor: const Color(0XFF222222),
         actions: [
@@ -289,7 +293,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
               child: Text(
                 'Your Upcoming Events',
-                style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold),
+                style: GoogleFonts.lora(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             SizedBox(
@@ -303,8 +310,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          EventMatchesScreen(event: _interestedEvents[i]),
+                      builder: (_) => EventMatchesScreen(
+                        allEvents: _interestedEvents,
+                        event: _interestedEvents[i],
+                      ),
                     ),
                   ),
                 ),
@@ -314,7 +323,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               padding: EdgeInsets.fromLTRB(16, 24, 16, 0),
               child: Text(
                 'Matches to Review',
-                style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold),
+                style: GoogleFonts.lora(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             // one MatchRow per event
@@ -326,36 +338,43 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             else
               for (final event in _interestedEvents)
                 (groupedMatches[event.eventId]?.isEmpty ?? true)
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            event.title,
-                            style: GoogleFonts.bitter(fontSize: 18, color: const Color(0XFF222222), fontWeight: FontWeight.bold)
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'No matches yet, come back later',
-                            style: GoogleFonts.merriweather(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 24,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              event.title,
+                              style: GoogleFonts.bitter(
+                                fontSize: 18,
+                                color: const Color(0XFF222222),
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              'No matches yet, come back later',
+                              style: GoogleFonts.merriweather(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : MatchRow(
+                        cards: groupedMatches[event.eventId] ?? [],
+                        eventLabel: event.title,
+                        onTap: (i) {
+                          final cards = groupedMatches[event.eventId] ?? [];
+                          if (cards.isNotEmpty) {
+                            _openProfile(cards[i]);
+                          }
+                        },
                       ),
-                    )
-                : MatchRow(
-                  cards: groupedMatches[event.eventId] ?? [],
-                  eventLabel: event.title,
-                  onTap: (i) {
-                    final cards = groupedMatches[event.eventId] ?? [];
-                    if (cards.isNotEmpty) {
-                      _openProfile(cards[i]);
-                    }
-                  },
-                ),
 
             const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
           ],
