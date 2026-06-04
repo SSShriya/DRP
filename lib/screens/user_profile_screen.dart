@@ -40,11 +40,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   MatchCard get _current => _cards[_index];
 
-  void _goToPage(int newIndex) {
+  void _goToPage(int newIndex, {bool goingForward = true}) {
     if (_isAnimating) return;
     _isAnimating = true;
     setState(() {
-      _goingForward = newIndex > _index;
+      _goingForward = goingForward;
       _index = newIndex;
     });
     Future.delayed(
@@ -102,18 +102,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               onHorizontalDragEnd: (details) {
                 final velocity = details.primaryVelocity ?? 0;
                 if (velocity < -300) {
-                  // swipe left → next (wrap to 0 at end)
-                  _goToPage(_index < _cards.length - 1 ? _index + 1 : 0);
+                  // swipe left → next = forward
+                  _goToPage(
+                    _index < _cards.length - 1 ? _index + 1 : 0,
+                    goingForward: true,
+                  );
                 } else if (velocity > 300) {
-                  // swipe right → prev (wrap to last at start)
-                  _goToPage(_index > 0 ? _index - 1 : _cards.length - 1);
+                  // swipe right → prev = backward
+                  _goToPage(
+                    _index > 0 ? _index - 1 : _cards.length - 1,
+                    goingForward: false,
+                  );
                 }
               },
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                layoutBuilder: ((currentChild, previousChildren) {
+                layoutBuilder: (currentChild, previousChildren) {
                   return currentChild ?? const SizedBox();
-                }),
+                },
                 transitionBuilder: (child, animation) {
                   final isEntering = child.key == ValueKey(_index);
                   final beginOffset = isEntering
@@ -154,7 +160,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              // fixes layout overflow on long names
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -167,12 +172,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   ),
                                   Row(
                                     children: [
-                                      Icon(Icons.school, size: 17),
+                                      const Icon(Icons.school, size: 17),
                                       const SizedBox(width: 2),
                                       Expanded(
                                         child: Text(
                                           '${_current.yearGroup} · ${_current.university} · ${_current.course}',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 16,
                                             color: Colors.grey,
                                           ),
@@ -184,7 +189,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   ),
                                   Row(
                                     children: [
-                                      Icon(Icons.location_on, size: 17),
+                                      const Icon(Icons.location_on, size: 17),
                                       Text(
                                         _current.location,
                                         style: const TextStyle(
@@ -201,10 +206,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // -- shared event group --
-                        Text(
+                        // -- shared event --
+                        const Text(
                           'You both want to attend:',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -253,7 +258,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                         const SizedBox(height: 24),
 
-                        // -- Bio --
+                        // -- bio --
                         const Text(
                           'Bio:',
                           style: TextStyle(
@@ -296,8 +301,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton(
-                  onPressed: () =>
-                      _goToPage(_index > 0 ? _index - 1 : _cards.length - 1),
+                  onPressed: () => _goToPage(
+                    _index > 0 ? _index - 1 : _cards.length - 1,
+                    goingForward: false,
+                  ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
