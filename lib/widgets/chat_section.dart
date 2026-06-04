@@ -97,7 +97,7 @@ class ChatSection extends StatelessWidget {
                 ],
               ),
               subtitle: Text(
-                chat.lastMessage,
+                chat.numMessages <= 0 ? 'No messages yet' : chat.lastMessage,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
