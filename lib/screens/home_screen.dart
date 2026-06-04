@@ -125,6 +125,13 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     }
 
     final groupedMatches = _matchesByEvent;
+    final eventsWithMatches = _interestedEvents
+        .where((e) => (groupedMatches[e.eventId]?.isNotEmpty ?? false))
+        .toList(); // already sorted by date from _loadMatches
+
+    final eventsWithoutMatches = _interestedEvents
+        .where((e) => (groupedMatches[e.eventId]?.isEmpty ?? true))
+        .toList(); // already sorted by date from _loadMatches
 
     return Scaffold(
       backgroundColor: const Color(0XFFF5F0F6),
@@ -335,51 +342,54 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               ),
             ),
             // one MatchRow per event
+            // one MatchRow per event — with matches first, then without
             if (_pendingMatches.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(32),
                 child: Center(child: Text("You've reviewed everyone!!")),
               )
-            else
-              for (final event in _interestedEvents)
-                (groupedMatches[event.eventId]?.isEmpty ?? true)
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 24,
+            else ...[
+              // ── Events WITH matches ──
+              for (final event in eventsWithMatches)
+                MatchRow(
+                  cards: groupedMatches[event.eventId] ?? [],
+                  eventLabel: event.title,
+                  onTap: (i) {
+                    final cards = groupedMatches[event.eventId] ?? [];
+                    if (cards.isNotEmpty) _openProfile(cards[i]);
+                  },
+                ),
+
+              // ── Events WITHOUT matches ──
+              for (final event in eventsWithoutMatches)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: GoogleFonts.bitter(
+                          fontSize: 18,
+                          color: const Color(0XFF222222),
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event.title,
-                              style: GoogleFonts.bitter(
-                                fontSize: 18,
-                                color: const Color(0XFF222222),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'No matches yet, come back later',
-                              style: GoogleFonts.merriweather(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : MatchRow(
-                        cards: groupedMatches[event.eventId] ?? [],
-                        eventLabel: event.title,
-                        onTap: (i) {
-                          final cards = groupedMatches[event.eventId] ?? [];
-                          if (cards.isNotEmpty) {
-                            _openProfile(cards[i]);
-                          }
-                        },
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'No matches yet, come back later',
+                        style: GoogleFonts.merriweather(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
 
             const Padding(padding: EdgeInsets.fromLTRB(16, 24, 16, 12)),
           ],
