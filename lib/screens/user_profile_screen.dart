@@ -172,6 +172,25 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       color: Colors.grey,
                                     ),
                                   ),
+                                  Text(
+                                    'Studying ${_current.course}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.location_on),
+                                      Text(
+                                        _current.location,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  )
                                 ],
                               ),
                             ),

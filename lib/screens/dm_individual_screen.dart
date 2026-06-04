@@ -222,7 +222,7 @@ class _DMScreenState extends State<DMScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.pin_drop_outlined),
+              icon: const Icon(Icons.location_on),
               onPressed: _suggestMeeting,
               tooltip: 'Suggest a time/place to meet ${widget.chat.name} before ${widget.chat.event}!',
               iconSize: 36
