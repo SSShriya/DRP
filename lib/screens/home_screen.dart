@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           event.title,
-                          style: GoogleFonts.bitter(fontSize: 18, color: const Color.fromARGB(255, 89, 79, 79))
+                          style: GoogleFonts.bitter(fontSize: 18, color: const Color(0XFF222222), fontWeight: FontWeight.bold)
                         ),
                         const SizedBox(height: 4),
                         Text(

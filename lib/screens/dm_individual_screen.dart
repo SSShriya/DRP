@@ -91,11 +91,12 @@ class _DMScreenState extends State<DMScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Chat Hints'),
+        title: const Text('Prompts'),
         content: Text(
           '''Here's some helpful prompts to help you chat to ${widget.chat.name}:
           \n- "What are your favorite hobbies?"
-          \n- "Have you traveled anywhere interesting recently?"''',
+          \n- "Have you traveled anywhere interesting recently?"
+          \n- "What's your favourite type of duck?"''',
         ),
         actions: [
           TextButton(

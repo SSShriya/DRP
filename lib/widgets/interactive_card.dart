@@ -19,7 +19,7 @@ class InteractiveCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
-      width: 150,
+      width: 173,
       child: Material(
         color: card.color,
         borderRadius: BorderRadius.circular(16),
@@ -66,7 +66,7 @@ class InteractiveCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${eventCard.numMatches} ${eventCard.numMatches == 1 ? 'match' : 'matches'}',
+                          '${eventCard.numMatches} confirmed ${eventCard.numMatches == 1 ? 'match' : 'matches'}',
                           style: const TextStyle(
                             color: Color(0xFF222222),
                             fontSize: 11,
