@@ -4,7 +4,6 @@ import 'package:flutter_profile_picture/flutter_profile_picture.dart';
 import '../models/match_convo.dart';
 import '../services/conversation_service.dart';
 import '../widgets/user_profile_card.dart';
-import '../models/match_card.dart';
 
 class DMScreen extends StatefulWidget {
   final ChatConversation chat;
@@ -227,7 +226,6 @@ class _DMScreenState extends State<DMScreen> {
           title: GestureDetector(
             onTap: () {
               final card = widget.chat.matchCard;
-              if (card == null) return; // no profile to show
               Navigator.push(
                 context,
                 MaterialPageRoute(
