@@ -50,15 +50,13 @@ class _DMScreenState extends State<DMScreen> {
           final senderId = row['sender_id'] as String;
           final content = row['content'] ?? '';
           
-          // Simple identification tag to check if backend message data represents a custom structural JSON invitation
-          final isInvite = content.startsWith('INVITATION_DATA:');
+          // Checks if it is a local rich client object OR the string fallback recorded in database tables
+          final isInvite = content.startsWith('INVITATION_DATA:') || content == 'Invitation sent.';
 
           return _Message(
             text: content,
             fromMe: senderId == myUserId,
             isInvitation: isInvite,
-            // For demo tracking purposes, start unaccepted/unrejected. 
-            // In production, your DB schema would track an active response state string.
             invitationStatus: isInvite ? 'pending' : null, 
           );
         }).toList();
@@ -95,7 +93,6 @@ class _DMScreenState extends State<DMScreen> {
     );
 
     if (result != null) {    
-      // Serialize clean token prefix strings so database rows easily parse structural maps
       final String rawInvitePayload = "INVITATION_DATA:{"
           "\"date\":\"${result['date']}\","
           "\"time\":\"${result['time']}\","
@@ -103,14 +100,17 @@ class _DMScreenState extends State<DMScreen> {
           "}";
 
       setState(() {
+        // Render rich graphical box inside local view interface immediately 
         _messages.add(_Message(
           text: rawInvitePayload, 
           fromMe: true, 
           isInvitation: true,
           invitationStatus: 'pending',
         ));
+        
+        // Write standard text transaction identifier label value down to backend tables
         _conversationService.recordMessage(
-          rawInvitePayload,
+          'Invitation sent.',
           myUserId,
           widget.chat.otherUserId,
         );
@@ -119,7 +119,6 @@ class _DMScreenState extends State<DMScreen> {
     }
   }
 
-  // Handle choice submission response action blocks
   void _handleInvitationResponse(int messageIndex, bool accepted) {
     setState(() {
       _messages[messageIndex].invitationStatus = accepted ? 'accepted' : 'rejected';
@@ -127,7 +126,6 @@ class _DMScreenState extends State<DMScreen> {
 
     final String resultText = accepted ? "Accepted the invitation" : "Declined the invitation";
     
-    // Send automatic contextual follow-up text alert confirming confirmation choice selection status update
     _conversationService.recordMessage(
       "=== $resultText ===",
       myUserId,
@@ -147,11 +145,9 @@ class _DMScreenState extends State<DMScreen> {
     final event = widget.chat.event;
 
     final prompts = [
-      if (interests.isNotEmpty)
-        'How long have you been interested in ${interests[0]}?',
+      if (interests.isNotEmpty) 'How long have you been interested in ${interests[0]}?',
       if (interests.length > 1) 'What got you into ${interests[1]}?',
-      if (interests.length > 2)
-        'Do you have any tips for someone getting into ${interests[2]}?',
+      if (interests.length > 2) 'Do you have any tips for someone getting into ${interests[2]}?',
       if (event.isNotEmpty) 'What made you interested in $event?',
     ];
     showDialog(
@@ -170,23 +166,17 @@ class _DMScreenState extends State<DMScreen> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () {
-                    Navigator.pop(context); // close dialog
-                    _controller.text = prompt; // populate text field
-                    _send(); // send immediately
+                    Navigator.pop(context);
+                    _controller.text = prompt;
+                    _send();
                   },
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: const Color(0XFF84DCC6).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0XFF84DCC6),
-                        width: 1,
-                      ),
+                      border: Border.all(color: const Color(0XFF84DCC6), width: 1),
                     ),
                     child: Text(prompt, style: const TextStyle(fontSize: 14)),
                   ),
@@ -280,7 +270,6 @@ class _DMScreenState extends State<DMScreen> {
                                     ),
                                   ),
                                 const SizedBox(height: 12),
-                                // Interests Card
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                                   child: Container(
@@ -318,21 +307,15 @@ class _DMScreenState extends State<DMScreen> {
                                     ),
                                   ),
                                 ),
-
-                                // Messages Thread Container Block
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: List.generate(_messages.length, (index) {
                                       final msg = _messages[index];
-
-                                      // ── Condition Branch: Check if invitation card should render ──
                                       if (msg.isInvitation) {
                                         return _buildInvitationBox(msg, index);
                                       }
-
-                                      // Standard Text Chat Bubble Layout Render Blueprint
                                       return Align(
                                         alignment: msg.fromMe ? Alignment.centerRight : Alignment.centerLeft,
                                         child: Container(
@@ -406,28 +389,32 @@ class _DMScreenState extends State<DMScreen> {
     );
   }
 
-  // Custom UI Card component specifically styling meeting transaction alerts
   Widget _buildInvitationBox(_Message msg, int index) {
-    // Basic text parsing logic pattern cleanup extracting explicit map values safely
     final String cleanData = msg.text.replaceFirst('INVITATION_DATA:', '');
     
-    // Naive split fallback parsing for clean string representation without introducing structural dart JSON library dependencies
-    String extractedDate = "Unspecified Date";
-    String extractedTime = "Unspecified Time";
-    String extractedLoc = "No location specified";
+    String extractedDate = "Details saved";
+    String extractedTime = "Details saved";
+    String extractedLoc = "Check event panel updates";
 
-    try {
-      final RegExp dateRegex = RegExp(r'"date":"([^"]+)"');
-      final RegExp timeRegex = RegExp(r'"time":"([^"]+)"');
-      final RegExp locRegex = RegExp(r'"location":"([^"]*)"');
+    // Prevent parsing errors if structural payload was omitted when saving back to server database
+    if (msg.text == 'Invitation sent.') {
+      extractedDate = "Details in notification";
+      extractedTime = "Details in notification";
+      extractedLoc = "Check your system alerts";
+    } else {
+      try {
+        final RegExp dateRegex = RegExp(r'"date":"([^"]+)"');
+        final RegExp timeRegex = RegExp(r'"time":"([^"]+)"');
+        final RegExp locRegex = RegExp(r'"location":"([^"]*)"');
 
-      if (dateRegex.hasMatch(cleanData)) extractedDate = dateRegex.firstMatch(cleanData)!.group(1)!;
-      if (timeRegex.hasMatch(cleanData)) extractedTime = timeRegex.firstMatch(cleanData)!.group(1)!;
-      if (locRegex.hasMatch(cleanData)) {
-        final locVal = locRegex.firstMatch(cleanData)!.group(1)!;
-        if (locVal.isNotEmpty) extractedLoc = locVal;
-      }
-    } catch (_) {}
+        if (dateRegex.hasMatch(cleanData)) extractedDate = dateRegex.firstMatch(cleanData)!.group(1)!;
+        if (timeRegex.hasMatch(cleanData)) extractedTime = timeRegex.firstMatch(cleanData)!.group(1)!;
+        if (locRegex.hasMatch(cleanData)) {
+          final locVal = locRegex.firstMatch(cleanData)!.group(1)!;
+          if (locVal.isNotEmpty) extractedLoc = locVal;
+        }
+      } catch (_) {}
+    }
 
     final bool isPending = msg.invitationStatus == 'pending';
 
@@ -451,7 +438,6 @@ class _DMScreenState extends State<DMScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Colored Header Bar Title Block
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               decoration: const BoxDecoration(
@@ -469,7 +455,6 @@ class _DMScreenState extends State<DMScreen> {
                 ],
               ),
             ),
-            // Body Content Parameters Detail View
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -483,7 +468,6 @@ class _DMScreenState extends State<DMScreen> {
                   
                   const Divider(height: 16),
 
-                  // ── Interaction Button Bar Execution Layout Block ──
                   if (isPending) ...[
                     if (!msg.fromMe) ...[
                       Row(
@@ -525,12 +509,13 @@ class _DMScreenState extends State<DMScreen> {
                       )
                     ]
                   ] else ...[
-                    // Post-Interaction Finished Execution Block Placeholder View Status Info Labels
                     Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
-                          color: msg.invitationStatus == 'accepted' ? const Color(0XFF84DCC6).withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.1),
+                          color: msg.invitationStatus == 'accepted' 
+                              ? const Color(0XFF84DCC6).withValues(alpha: 0.2) 
+                              : Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -553,12 +538,11 @@ class _DMScreenState extends State<DMScreen> {
   }
 }
 
-// Upgraded Message Structuring Class
 class _Message {
   final String text;
   final bool fromMe;
   final bool isInvitation;
-  String? invitationStatus; // Value tracks: 'pending', 'accepted', 'rejected'
+  String? invitationStatus; 
 
   _Message({
     required this.text,
