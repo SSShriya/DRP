@@ -37,12 +37,25 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
   }
 
   Future<void> _register() async {
-    registrationService.registerForEvent(widget.card.eventId);
-
-    showDialog(
-      context: context,
-      builder: (context) => EventRegisteredPopup(eventName: widget.card.title),
-    );
+    try {
+      await registrationService.registerForEvent(widget.card.eventId);
+      setState(() => _isRegistered = true);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => EventRegisteredPopup(eventName: widget.card.title),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Registration failed: $e'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+    }
   }
 
   @override
