@@ -1,5 +1,6 @@
 import 'package:drp/screens/events_screen.dart';
 import 'package:drp/screens/profile_screen.dart';
+import 'package:drp/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screens/dm_home_screen.dart';
@@ -20,10 +21,7 @@ class AppNavigationBar extends StatelessWidget {
         fontSize: 12,
         fontWeight: FontWeight.w600,
       ),
-
-      unselectedLabelStyle: GoogleFonts.montserrat(
-        fontSize: 12,
-      ),
+      unselectedLabelStyle: GoogleFonts.montserrat(fontSize: 12),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Events'),
@@ -34,28 +32,30 @@ class AppNavigationBar extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
       onTap: (index) {
-        if (index == currentIndex) return; // alr here, do nothing
+        if (index == currentIndex) return;
         switch (index) {
           case 0:
-            // pop until back to route
-            Navigator.popUntil(context, (route) => route.isFirst);
+            // Navigate to HomeScreen and remove everything above it
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+              (route) =>
+                  false, // clear the stack, HomeScreen becomes the new root
+            );
             break;
           case 1:
-            // search screen
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => EventsScreen()),
             );
             break;
           case 2:
-            // dm screen
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => DMOverviewScreen()),
             );
             break;
           case 3:
-            // profile screen
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => ProfileScreen()),

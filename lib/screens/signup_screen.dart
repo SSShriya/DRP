@@ -74,7 +74,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         await SessionManager.saveSession(
           userId: currentUserId,
-          authToken: session.accessToken,
         );
 
         if (mounted) {

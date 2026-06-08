@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
-import 'services/session_manager.dart';
-import 'screens/signup_screen.dart'; 
+import 'screens/signup_screen.dart';
 
 class AppState {
   static String? currentUserId;
 }
 
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,19 +26,23 @@ void main() async {
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorObservers: [routeObserver], 
-      home: FutureBuilder<bool>(
-        future: SessionManager.isLoggedIn(),
+      navigatorObservers: [routeObserver],
+      home: StreamBuilder<AuthState>(
+        // listens to live auth changes
+        stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator(); // Loading
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
-          // Route based on session
-          return snapshot.data == true ? HomeScreen() : SignUpScreen();
+
+          final session = snapshot.data?.session;
+          return session != null ? const HomeScreen() : const SignUpScreen();
         },
       ),
       routes: {
