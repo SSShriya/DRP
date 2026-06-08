@@ -72,7 +72,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           });
 
           await supabase.from('user_purpose').insert({
-            'user_id': AppState.currentUserId,
+            'user_id': currentUserId,
             'is_committee_member': holdsEvents
           });
         }

@@ -3,7 +3,7 @@ import 'package:drp/screens/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../main.dart'; // To access AppState.currentUserId
+import '../main.dart';
 import '../services/profile_service.dart';
 import '../services/session_manager.dart';
 
@@ -71,7 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final userId = AppState.currentUserId;
+    final userId = currentUserId;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: User session not found.')),

@@ -8,10 +8,7 @@ import 'screens/signup_screen.dart';
 
 final supabase = Supabase.instance.client;
 bool? holdsEvents;
-
-class AppState {
-  static String? currentUserId;
-}
+String? currentUserId;
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
