@@ -73,6 +73,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     } catch (e) {
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/signup');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An issue has occurred: for your security, you have been logged out.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
       }
     }
   }

@@ -6,7 +6,7 @@ import '../models/match_card.dart';
 final supabase = Supabase.instance.client;
 
 class MatchService {
-  late final String currentUserId;
+  late String currentUserId;
 
   Future<List<MatchCard>> getPendingMatches(String currentUserId) async {
     this.currentUserId = currentUserId; 

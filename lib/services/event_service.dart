@@ -10,8 +10,7 @@ final supabase = Supabase.instance.client;
 class EventService {
 
   Future<List<EventCard>> getInterestedEvents(String currentUserId) async {
-    // final currentUserId = await loadUserId();
-
+    
     // get interested events
     final rows = await supabase
         .from('interested_events')

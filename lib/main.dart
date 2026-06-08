@@ -5,10 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
 import 'screens/signup_screen.dart';
 
-class AppState {
-  static String? currentUserId;
-}
-
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
 
