@@ -1,8 +1,8 @@
-import 'package:drp/services/conversation_service.dart';
+import 'package:drp/screens/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/session_manager.dart';
-import 'home_screen.dart';
+import '../services/supabase_client.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -19,10 +19,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final _nameController = TextEditingController();
   // uni, course and bio will default to empty strings - ask users if they prefer all to be mandatory on signup
-  
+
   bool _isSignUpMode = true; // Tracks whether showing Sign Up or Login view
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _holdsEvents = false;
 
   @override
   void dispose() {
@@ -43,12 +44,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       final AuthResponse response;
-      
+
       if (_isSignUpMode) {
-        response = await supabase.auth.signUp(
-          email: email,
-          password: password,
-        );
+        response = await supabase.auth.signUp(email: email, password: password);
       } else {
         response = await supabase.auth.signInWithPassword(
           email: email,
@@ -64,29 +62,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         if (_isSignUpMode) {
           await supabase.from('users').insert({
-            'id': currentUserId, // Must match the Auth UUID exactly
+            'id': currentUserId,
             'name': name,
             'university': '',
             'course': '',
             'bio': '',
           });
+
+          await supabase.from('user_purpose').insert({
+            'user_id': currentUserId,
+            'is_committee_member': _holdsEvents,
+          });
         }
 
-        await SessionManager.saveSession(
-          userId: currentUserId,
-        );
+        await SessionManager.saveSession(userId: currentUserId);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_isSignUpMode ? 'Account created!' : 'Welcome back!'),
+              content: Text(
+                _isSignUpMode ? 'Account created!' : 'Welcome back!',
+              ),
             ),
           );
-
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-            (route) => false,
-          );
+          // StreamBuilder in main.dart reacts to signIn and routes automatically
         }
       }
     } on AuthException catch (e) {
@@ -111,7 +110,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -119,7 +121,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Icon(
-                    _isSignUpMode ? Icons.account_circle_outlined : Icons.lock_open_outlined,
+                    _isSignUpMode
+                        ? Icons.account_circle_outlined
+                        : Icons.lock_open_outlined,
                     size: 80,
                     color: const Color(0XFF84DCC6),
                   ),
@@ -127,19 +131,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Text(
                     _isSignUpMode ? 'Create Account' : 'Welcome Back',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _isSignUpMode 
-                        ? 'Sign up to start matching and organizing meetups!' 
+                    _isSignUpMode
+                        ? 'Sign up to start matching and organizing meetups!'
                         : 'Log into your existing account.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 32),
 
-                  if(_isSignUpMode)
+                  if (_isSignUpMode)
                     // Name
                     TextFormField(
                       controller: _nameController,
@@ -150,15 +158,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         prefixIcon: const Icon(Icons.person),
                         filled: true,
                         fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
-                      onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocusNode),
                       validator: (value) {
-                        if (_isSignUpMode && (value == null || value.trim().isEmpty)) return 'Please enter your name';
+                        if (_isSignUpMode &&
+                            (value == null || value.trim().isEmpty))
+                          return 'Please enter your name';
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
                   // Email
                   TextFormField(
@@ -170,12 +182,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       prefixIcon: const Icon(Icons.email_outlined),
                       filled: true,
                       fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                    onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocusNode),
+                    onFieldSubmitted: (_) =>
+                        FocusScope.of(context).requestFocus(_passwordFocusNode),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) return 'Please enter your email';
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value.trim())) {
                         return 'Please enter a valid email address';
                       }
                       return null;
@@ -194,20 +214,105 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       prefixIcon: const Icon(Icons.lock_outline),
                       filled: true,
                       fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                     ),
                     onFieldSubmitted: (_) => _handleSubmit(),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Please enter your password';
-                      if (value.length < 6) return 'Password must be at least 6 characters long';
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters long';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 32),
+
+                  if (_isSignUpMode) ...[
+                    // Determine purpose of using app
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            "Are you here to advertise events?",
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+
+                        // "YES" Button
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _holdsEvents = true;
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            // If selected: Solid teal/green highlight, otherwise clean light gray tint
+                            backgroundColor: _holdsEvents == true
+                                ? const Color(0XFF84DCC6)
+                                : Colors.grey.shade100,
+                            foregroundColor: _holdsEvents == true
+                                ? Colors.white
+                                : Colors.black87,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(
+                                color: _holdsEvents == true
+                                    ? const Color(0XFF84DCC6)
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                          ),
+                          child: const Text("Yes"),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        // "NO" Button
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _holdsEvents = false;
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            // If selected: Dark slate/red highlight, otherwise clean light gray tint
+                            backgroundColor: _holdsEvents == false
+                                ? const Color.fromARGB(255, 238, 48, 48)
+                                : Colors.grey.shade100,
+                            foregroundColor: _holdsEvents == false
+                                ? Colors.white
+                                : Colors.black87,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(
+                                color: _holdsEvents == false
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                          ),
+                          child: const Text("No"),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Action Button
                   ElevatedButton(
@@ -216,24 +321,45 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       backgroundColor: const Color(0XFF84DCC6),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                            height: 20, width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
                           )
-                        : Text(_isSignUpMode ? 'SIGN UP' : 'LOG IN', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                        : Text(
+                            _isSignUpMode ? 'SIGN UP' : 'LOG IN',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 16),
 
                   // Dynamic Auth Mode Toggle
                   TextButton(
-                    onPressed: () => setState(() => _isSignUpMode = !_isSignUpMode),
+                    onPressed: () =>
+                        setState(() => _isSignUpMode = !_isSignUpMode),
                     child: Text(
-                      _isSignUpMode ? 'Already have an account? Log In' : 'Need an account? Sign Up',
-                      style: const TextStyle(color: Color(0XFF84DCC6), fontWeight: FontWeight.w600),
+                      _isSignUpMode
+                          ? 'Already have an account? Log In'
+                          : 'Need an account? Sign Up',
+                      style: const TextStyle(
+                        color: Color(0XFF84DCC6),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],

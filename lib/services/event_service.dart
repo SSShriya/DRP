@@ -1,16 +1,13 @@
 // lib/services/event_service.dart
 
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/event_card.dart';
+import 'supabase_client.dart';
+
 // import 'utils.dart';
 
-final supabase = Supabase.instance.client;
-
 class EventService {
-
   Future<List<EventCard>> getInterestedEvents(String currentUserId) async {
-    
     // get interested events
     final rows = await supabase
         .from('interested_events')

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-final supabase = Supabase.instance.client;
+import 'supabase_client.dart';
 
 /// Uploads a profile picture and updates the user's avatar_url in the DB.
 Future<void> uploadProfilePicture(File imageFile, String userId) async {

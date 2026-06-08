@@ -1,15 +1,11 @@
 // lib/services/match_service.dart
 
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/match_card.dart';
-import 'utils.dart'; 
-
-final supabase = Supabase.instance.client;
+import 'utils.dart';
+import 'supabase_client.dart';
 
 class MatchService {
-
   Future<List<MatchCard>> getPendingMatches(String currentUserId) async {
-    
     // fetch current user's profile
     final currentUserData = await supabase
         .from('users')
@@ -130,7 +126,7 @@ class MatchService {
 
   // check if other user has accepted your match
   Future<bool> hasOtherUserAccepted(String matchId) async {
-    final currentUserId = await loadUserId(); 
+    final currentUserId = await loadUserId();
 
     final parts = matchId.split('|');
     final user1Id = parts[0];
@@ -153,7 +149,9 @@ class MatchService {
   }
 
   // Matches where current user accepted, other user hasn't decided yet
-  Future<List<MatchCard>> getAwaitingResponseMatches(String currentUserId) async {
+  Future<List<MatchCard>> getAwaitingResponseMatches(
+    String currentUserId,
+  ) async {
     final rows = await supabase
         .from('matches')
         .select(
@@ -207,7 +205,7 @@ class MatchService {
   }
 
   Future<void> recordDecision(String matchId, bool accepted) async {
-    final currentUserId = await loadUserId(); 
+    final currentUserId = await loadUserId();
 
     final parts = matchId.split('|');
     final user1Id = parts[0];
@@ -231,8 +229,8 @@ class MatchService {
 
   // for getting confirmed matches for an event
   Future<List<MatchCard>> getConfirmedMatchesForEvent(String eventId) async {
-    final currentUserId = await loadUserId(); 
-    
+    final currentUserId = await loadUserId();
+
     final rows = await supabase
         .from('matches')
         .select(

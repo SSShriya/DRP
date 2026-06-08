@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:drp/screens/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -165,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SnackBar(content: Text('Profile saved successfully!')),
         );
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainShell()),
         );
       }
     } on PostgrestException catch (e) {
@@ -351,7 +352,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 24),
 
                       // Interests
-                      // ✅ Show count against cap
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

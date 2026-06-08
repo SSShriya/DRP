@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-final _supabase = Supabase.instance.client;
+import 'supabase_client.dart';
 
 class SessionManager {
   static const _storage = FlutterSecureStorage();
@@ -18,7 +17,7 @@ class SessionManager {
 
   // Check Supabase's live session
   static Future<bool> isLoggedIn() async {
-    final session = _supabase.auth.currentSession;
+    final session = supabase.auth.currentSession;
 
     if (session == null) {
       await clearSession();

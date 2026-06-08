@@ -2,11 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'session_manager.dart';
 
 Future<String> loadUserId() async {
-  // Prefer the live Supabase session user
   final user = Supabase.instance.client.auth.currentUser;
   if (user != null) return user.id;
 
-  // Fallback to stored ID
+  // Fallback to secure storage
   final id = await SessionManager.getUserId();
   if (id == null) {
     await SessionManager.clearSession();

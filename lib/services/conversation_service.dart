@@ -1,17 +1,13 @@
 // lib/services/conversation_service.dart
-
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase_client.dart';
 import '../models/match_convo.dart';
 import '../models/match_card.dart';
 import 'utils.dart';
 // import 'session_manager.dart';
 
-final supabase = Supabase.instance.client;
-
 class ConversationService {
-
   Future<List<ChatConversation>> getConversations() async {
-    final currentUserId = await loadUserId(); 
+    final currentUserId = await loadUserId();
 
     final matchRows = await supabase
         .from('matches')
