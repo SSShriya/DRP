@@ -1,6 +1,6 @@
   import 'dart:io';
 
-import 'package:drp/services/conversation_service.dart';
+import 'package:drp/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> uploadProfilePicture(File imageFile, String userId) async {

@@ -3,7 +3,6 @@ import '../models/match_card.dart';
 import '../models/event_card.dart';
 import '../services/match_service.dart';
 import '../widgets/match_row.dart';
-import '../widgets/app_navigation_bar.dart';
 import 'match_profile_screen.dart';
 import '../models/match_convo.dart';
 import '../widgets/interactive_card.dart';
@@ -394,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           ],
         ),
       ),
-      bottomNavigationBar: AppNavigationBar(),
+      //bottomNavigationBar: AppNavigationBar(),
     );
   }
 }

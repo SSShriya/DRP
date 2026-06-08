@@ -4,11 +4,50 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
 import 'screens/signup_screen.dart'; 
+import 'widgets/app_navigation_bar.dart';
+
+// Global alias for easy access across screens
+final supabase = Supabase.instance.client;
 
 class AppState {
   static String? currentUserId;
+  static bool? holdsEvents;
 }
 
+// ====================================================================
+// NEW: The Universal Master Layout Shell hosting the AppNavigationBar
+// ====================================================================
+class MainLayout extends StatefulWidget {
+  const MainLayout({super.key});
+
+  @override
+  State<MainLayout> createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends State<MainLayout> {
+  int _currentIndex = 0;
+
+  // Define your primary app sub-screens here
+  final List<Widget> _subScreens = [
+    const HomeScreen(),
+    const Scaffold(body: Center(child: Text("Profile/Settings Screen"))), 
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _subScreens,
+      ),
+      bottomNavigationBar: AppNavigationBar(),
+    );
+  }
+}
+
+// ====================================================================
+// Your Original Guard Code (Intact & Adapted to target the Framework Shell)
+// ====================================================================
 class AuthGuardObserver extends NavigatorObserver {
   bool _isRedirecting = false;
 
@@ -60,7 +99,6 @@ class AuthGuardObserver extends NavigatorObserver {
             (route) => false,
           );
         }
-        
         _isRedirecting = false;
       });
     }
@@ -88,11 +126,13 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       navigatorObservers: [routeObserver, authGuardObserver], 
-      home: const HomeScreen(),
+      // UPDATED: Points to MainLayout instead of raw HomeScreen so navigation bar appears automatically
+      home: const MainLayout(), 
       routes: {
         '/signup': (context) => const SignUpScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const MainLayout(), // Map route path requests to layout frame wrapper
       },
     );
   }
