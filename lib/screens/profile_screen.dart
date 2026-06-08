@@ -1,10 +1,11 @@
 import 'dart:io';
+import 'package:drp/screens/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../main.dart'; // To access AppState.currentUserId
-import 'home_screen.dart';
+import '../main.dart';
 import '../services/profile_service.dart';
+import '../services/session_manager.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -70,7 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final userId = AppState.currentUserId;
+    final userId = currentUserId;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: User session not found.')),
@@ -101,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
         // Take them straight to the main app dashboard
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainShell()),
         );
       }
     } on PostgrestException catch (e) {
@@ -117,6 +118,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
     );
+  }
+
+  Future<void> _logout() async {
+    await SessionManager.clearSession();
+    if (mounted) Navigator.pushReplacementNamed(context, '/signup');
   }
 
   @override
@@ -263,6 +269,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           elevation: 0,
                         ),
                         child: const Text('SAVE PROFILE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Logout button
+                      ElevatedButton(
+                        onPressed: _logout,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0XFFFD5757),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: const Text('LOG OUT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                       ),
                     ],
                   ),

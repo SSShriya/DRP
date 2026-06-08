@@ -1,4 +1,3 @@
-import 'package:drp/widgets/app_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import '../models/event_card.dart';
 import '../services/event_service.dart';
@@ -228,7 +227,6 @@ class _EventsScreenState extends State<EventsScreen> {
                   ),
               ],
             ),
-      bottomNavigationBar: const AppNavigationBar(currentIndex: 1),
     );
   }
 }

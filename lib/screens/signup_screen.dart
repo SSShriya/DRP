@@ -1,8 +1,8 @@
-import 'package:drp/services/conversation_service.dart';
+import 'package:drp/screens/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart'; 
-import 'home_screen.dart';
+import '../services/session_manager.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -56,18 +56,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
       }
 
-      if (response.user != null) {
-        AppState.currentUserId = response.user!.id;
+      final user = response.user;
+      final session = response.session;
+
+      if (user != null && session != null) {
+        final currentUserId = user.id;
 
         if (_isSignUpMode) {
           await supabase.from('users').insert({
-            'id': AppState.currentUserId, // Must match the Auth UUID exactly
+            'id': currentUserId, // Must match the Auth UUID exactly
             'name': name,
             'university': '',
             'course': '',
             'bio': '',
           });
+
+          await supabase.from('user_purpose').insert({
+            'user_id': currentUserId,
+            'is_committee_member': holdsEvents
+          });
         }
+
+        await SessionManager.saveSession(
+          userId: currentUserId,
+          authToken: session.accessToken,
+        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -77,7 +90,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           );
 
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const MainShell()),
             (route) => false,
           );
         }
@@ -145,7 +158,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       ),
-                      onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocusNode),
                       validator: (value) {
                         if (_isSignUpMode && (value == null || value.trim().isEmpty)) return 'Please enter your name';
                         return null;
@@ -201,6 +213,77 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 32),
+
+                  if (_isSignUpMode) ...[
+                    // Determine purpose of using app
+                    Row(                                         
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            "Are you here to advertise events?",
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+      
+                        // "YES" Button
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              holdsEvents = true;
+                              });
+                            },
+                          style: TextButton.styleFrom(
+                            // If selected: Solid teal/green highlight, otherwise clean light gray tint
+                            backgroundColor: holdsEvents == true 
+                                        ? const Color(0XFF84DCC6) 
+                                        : Colors.grey.shade100,
+                            foregroundColor: holdsEvents == true
+                                        ? Colors.white
+                                        : Colors.black87,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: holdsEvents == true 
+                                            ? const Color(0XFF84DCC6) 
+                                            : Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),                                  
+                            child: const Text("Yes"),
+                            ),
+      
+                            const SizedBox(width: 8),
+      
+                            // "NO" Button
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  holdsEvents = false;
+                                });
+                              },
+                              style: TextButton.styleFrom(
+                              // If selected: Dark slate/red highlight, otherwise clean light gray tint
+                              backgroundColor: holdsEvents == false 
+                                        ? const Color.fromARGB(255, 238, 48, 48) 
+                                        : Colors.grey.shade100,
+                              foregroundColor: holdsEvents == false 
+                                        ? Colors.white 
+                                        : Colors.black87,
+                              shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(
+                                  color: holdsEvents == false 
+                                            ? Colors.grey.shade700 
+                                            : Colors.grey.shade300,
+                                  ),
+                                ),
+                              ), 
+                              child: const Text("No"),
+                              ),
+                            ],
+                            ),
+                            const SizedBox(height: 16),
+                            ],
 
                   // Action Button
                   ElevatedButton(
