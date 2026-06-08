@@ -16,6 +16,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordFocusNode = FocusNode();
+
+  final _nameController = TextEditingController();
+  // uni, course and bio will default to empty strings - ask users if they prefer all to be mandatory on signup
   
   bool _isSignUpMode = true; // Tracks whether showing Sign Up or Login view
   bool _obscurePassword = true;
@@ -23,6 +26,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _passwordFocusNode.dispose();
@@ -33,6 +37,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -57,9 +62,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         if (_isSignUpMode) {
           await supabase.from('users').insert({
             'id': AppState.currentUserId, // Must match the Auth UUID exactly
-            'name': '', // default
+            'name': name,
             'university': '',
             'course': '',
+            'bio': '',
           });
         }
 
@@ -125,6 +131,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 32),
+
+                  if(_isSignUpMode)
+                    // Name
+                    TextFormField(
+                      controller: _nameController,
+                      keyboardType: TextInputType.name,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'Name',
+                        prefixIcon: const Icon(Icons.person),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                      onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocusNode),
+                      validator: (value) {
+                        if (_isSignUpMode && (value == null || value.trim().isEmpty)) return 'Please enter your name';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
                   // Email
                   TextFormField(
