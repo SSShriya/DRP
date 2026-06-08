@@ -393,7 +393,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           ],
         ),
       ),
-      //bottomNavigationBar: AppNavigationBar(),
     );
   }
 }

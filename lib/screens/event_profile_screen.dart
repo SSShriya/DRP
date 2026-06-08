@@ -3,7 +3,6 @@ import 'package:drp/screens/event_registered_popup.dart';
 import 'package:flutter/material.dart';
 import '../models/event_card.dart';
 import '../services/registration_service.dart';
-import '../widgets/app_navigation_bar.dart';
 import 'package:intl/intl.dart';
 
 class EventProfileScreen extends StatefulWidget {
@@ -99,7 +98,6 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
         backgroundColor: const Color(0XFF84DCC6),
         foregroundColor: Colors.white,
       ),
-      bottomNavigationBar: const AppNavigationBar(currentIndex: 1), 
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -1,4 +1,5 @@
 import 'package:drp/screens/main_shell.dart';
+import 'package:drp/screens/society_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,7 +39,9 @@ class MainApp extends StatelessWidget {
             return const CircularProgressIndicator(); // Loading
           }
           // Route based on session
-          return snapshot.data == true ? MainShell() : SignUpScreen();
+          return snapshot.data == true
+                  ? (holdsEvents == true ? SocietyScreen() : const MainShell())
+                  : const SignUpScreen();
         },
       ),
       routes: {
