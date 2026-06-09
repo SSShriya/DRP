@@ -1,4 +1,4 @@
-import 'dart:async'; // 1. Imported for Timer support
+import 'dart:async';
 import 'package:drp/services/utils.dart';
 import 'package:drp/widgets/dm_meeting_popup.dart';
 import 'package:flutter/material.dart';
@@ -67,19 +67,29 @@ class _DMScreenState extends State<DMScreen> {
       final List<_Message> freshMessages = fetchedMaps.map((row) {
         final senderId = row['sender_id'] as String;
         final content = row['content'] ?? '';
-
         final isInvite = content.startsWith('INVITATION_DATA:');
 
         return _Message(
+          id: row['message_id']?.toString() ?? '',
           text: content,
           fromMe: senderId == myUserId,
           isInvitation: isInvite,
-          invitationStatus: isInvite ? 'pending' : null,
+          invitationStatus: isInvite
+              ? (row['invitation_status'] as bool?)
+              : null,
         );
       }).toList();
 
       // Check if data metrics changed before updating visual element arrays
-      final bool hasNewMessages = freshMessages.length != _messages.length;
+      final bool hasNewMessages =
+          freshMessages.length != _messages.length ||
+          freshMessages.any((fresh) {
+            final existing = _messages.firstWhere(
+              (m) => m.id == fresh.id,
+              orElse: () => fresh,
+            );
+            return existing.invitationStatus != fresh.invitationStatus;
+          });
 
       if (mounted) {
         setState(() {
@@ -105,19 +115,22 @@ class _DMScreenState extends State<DMScreen> {
     }
   }
 
-  void _send() {
+  void _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    setState(() {
-      _messages.add(_Message(text: text, fromMe: true));
-      _conversationService.recordMessage(
-        text,
-        myUserId,
-        widget.chat.otherUserId,
-      );
-    });
-    _scrollToBottom();
+
     _controller.clear();
+    _scrollToBottom();
+
+    final id = await _conversationService.recordMessage(
+      text,
+      myUserId,
+      widget.chat.otherUserId,
+    );
+
+    setState(() {
+      _messages.add(_Message(id: id, text: text, fromMe: true));
+    });
   }
 
   void _suggestMeeting() async {
@@ -134,43 +147,45 @@ class _DMScreenState extends State<DMScreen> {
           "\"location\":\"${result['location'] ?? ''}\""
           "}";
 
-      setState(() {
-        _messages.add(
-          _Message(
-            text: rawInvitePayload,
-            fromMe: true,
-            isInvitation: true,
-            invitationStatus: 'pending',
-          ),
-        );
-      });
-
-      await _conversationService.recordMessage(
+      final id = await _conversationService.recordMessage(
         rawInvitePayload,
         myUserId,
         widget.chat.otherUserId,
       );
 
+      setState(() {
+        _messages.add(
+          _Message(
+            id: id,
+            text: rawInvitePayload,
+            fromMe: true,
+            isInvitation: true,
+            invitationStatus: null,
+          ),
+        );
+      });
+
       _scrollToBottom();
     }
   }
 
-  void _handleInvitationResponse(int messageIndex, bool accepted) {
+  void _handleInvitationResponse(int messageIndex, bool accepted) async {
+    final id = _messages[messageIndex].id;
+
+    debugPrint(
+      'Handling response: index=$messageIndex id=$id status=$accepted',
+    );
+
     setState(() {
-      _messages[messageIndex].invitationStatus = accepted
-          ? 'accepted'
-          : 'rejected';
+      _messages[messageIndex].invitationStatus = accepted;
     });
 
-    final String resultText = accepted
-        ? "Accepted the invitation"
-        : "Declined the invitation";
-
-    _conversationService.recordMessage(
-      "=== $resultText ===",
-      myUserId,
-      widget.chat.otherUserId,
-    );
+    try {
+      await _conversationService.updateInvitationStatus(id, accepted);
+      debugPrint('Response handled successfully');
+    } catch (e) {
+      debugPrint('_handleInvitationResponse error: $e');
+    }
   }
 
   // 5. Explicit disposal cleanups ensuring garbage collecting clears the active continuous ticks
@@ -531,7 +546,7 @@ class _DMScreenState extends State<DMScreen> {
       }
     } catch (_) {}
 
-    final bool isPending = msg.invitationStatus == 'pending';
+    final bool isPending = msg.invitationStatus == null;
 
     return Align(
       alignment: msg.fromMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -676,18 +691,18 @@ class _DMScreenState extends State<DMScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: msg.invitationStatus == 'accepted'
+                          color: msg.invitationStatus == true
                               ? const Color(0XFF84DCC6).withValues(alpha: 0.2)
                               : Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          msg.invitationStatus == 'accepted'
+                          msg.invitationStatus == true
                               ? 'Accepted ✓'
                               : 'Declined ✕',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: msg.invitationStatus == 'accepted'
+                            color: msg.invitationStatus == true
                                 ? const Color(0XFF409A83)
                                 : Colors.red,
                           ),
@@ -706,12 +721,14 @@ class _DMScreenState extends State<DMScreen> {
 }
 
 class _Message {
+  final String id;
   final String text;
   final bool fromMe;
   final bool isInvitation;
-  String? invitationStatus;
+  bool? invitationStatus;
 
   _Message({
+    required this.id,
     required this.text,
     required this.fromMe,
     this.isInvitation = false,

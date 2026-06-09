@@ -3,6 +3,7 @@ import 'supabase_client.dart';
 import '../models/match_convo.dart';
 import '../models/match_card.dart';
 import 'utils.dart';
+import 'package:flutter/foundation.dart';
 // import 'session_manager.dart';
 
 class ConversationService {
@@ -108,16 +109,28 @@ class ConversationService {
     }).toList();
   }
 
-  Future<void> recordMessage(
+  Future<String> recordMessage(
     String message,
     String sender,
     String receiver,
   ) async {
-    await supabase.from('messages').insert({
-      'sender_id': sender,
-      'recipient_id': receiver,
-      'content': message,
-    });
+    try {
+      final response = await supabase
+          .from('messages')
+          .insert({
+            'sender_id': sender,
+            'recipient_id': receiver,
+            'content': message,
+          })
+          .select('message_id')
+          .single();
+
+      debugPrint('recordMessage response: $response');
+      return response['message_id'].toString();
+    } catch (e) {
+      debugPrint('recordMessage error: $e');
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getMessages(
@@ -132,5 +145,18 @@ class ConversationService {
         .order('created_at', ascending: true);
 
     return List<Map<String, dynamic>>.from(rows);
+  }
+
+  Future<void> updateInvitationStatus(String messageId, bool status) async {
+    try {
+      debugPrint('Updating invitation: id=$messageId status=$status');
+      await supabase
+          .from('messages')
+          .update({'invitation_status': status})
+          .eq('message_id', messageId);
+      debugPrint('Update successful');
+    } catch (e) {
+      debugPrint('updateInvitationStatus error: $e');
+    }
   }
 }
