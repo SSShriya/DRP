@@ -227,6 +227,29 @@ class MatchService {
         .eq('event_id', eventId);
   }
 
+  Future<void> blockUser(String matchId) async {
+    final currentUserId = await loadUserId();
+
+    final parts = matchId.split('|');
+    final user1Id = parts[0];
+    final user2Id = parts[1];
+
+    final otherUserId = currentUserId == user1Id ? user2Id : user1Id;
+
+    // Insert into blocked table (user1_id = blocker, user2_id = blocked)
+    await supabase.from('blocked').upsert({
+      'user1_id': currentUserId,
+      'user2_id': otherUserId,
+    });
+
+    // Also delete all matches between these two users
+    await supabase
+        .from('matches')
+        .delete()
+        .eq('user1_id', user1Id)
+        .eq('user2_id', user2Id);
+  }
+
   // for getting confirmed matches for an event
   Future<List<MatchCard>> getConfirmedMatchesForEvent(String eventId) async {
     final currentUserId = await loadUserId();
