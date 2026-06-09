@@ -21,8 +21,16 @@ void main() async {
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  Future<bool>? _committeeFuture;
+  String? _lastUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -32,24 +40,25 @@ class MainApp extends StatelessWidget {
         stream: supabase.auth.onAuthStateChange,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
 
           final session = snapshot.data?.session;
           if (session == null) return const SignUpScreen();
 
-          // Fetch user purpose from DB, not a global variable
+          // Only re-fetch if the user changed
+          if (_lastUserId != session.user.id) {
+            _lastUserId = session.user.id;
+            _committeeFuture = _isCommitteeMember(session.user.id);
+          }
+
           return FutureBuilder<bool>(
-            future: _isCommitteeMember(session.user.id),
+            future: _committeeFuture,
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
+                return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
-              return snap.data == true ? SocietyScreen() : const MainShell();
+              return snap.data == true ? const SocietyScreen() : const MainShell();
             },
           );
         },
@@ -67,10 +76,10 @@ Future<bool> _isCommitteeMember(String userId) async {
   for (int attempt = 0; attempt < 3; attempt++) {
     try {
       final result = await supabase
-          .from('societies')
+          .from('users')
           .select()
           .eq('id', userId);
-      if (result.isNotEmpty) return true;
+      return result[0]['is_society'];
     } catch (_) {}
     if (attempt < 2) await Future.delayed(const Duration(milliseconds: 500));
   }
