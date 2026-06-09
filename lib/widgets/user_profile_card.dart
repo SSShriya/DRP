@@ -2,13 +2,17 @@ import 'package:drp/services/match_service.dart';
 import 'package:flutter/material.dart';
 import '../models/match_card.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
+import '../screens/dm_individual_screen.dart';
+import '../models/match_convo.dart';
 
 class UserProfileCard extends StatelessWidget {
   final MatchCard card;
+  final bool accepted;
 
   const UserProfileCard({
     super.key, 
     required this.card,
+    this.accepted = false,
   });
 
   @override
@@ -75,6 +79,28 @@ class UserProfileCard extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                if (accepted) const SizedBox(height: 10),
+                if (accepted) 
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DMScreen(
+                            chat: ChatConversation(matchCard: card),
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(143, 186, 164, 214),
+                      foregroundColor: Colors.black,
+                    ),
+                    child: Text(
+                      "Message"
+                    ),
+                  )
               ],
             )
           ),

@@ -230,9 +230,8 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                       appBar: AppBar(
                         backgroundColor: const Color(0XFF84DCC6),
                         foregroundColor: Colors.white,
-                        title: Text(match.title),
                       ),
-                      body: UserProfileCard(card: match),
+                      body: UserProfileCard(card: match, accepted: true,),
                     ),
                   ),
                 ),

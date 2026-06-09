@@ -268,7 +268,7 @@ class _DMScreenState extends State<DMScreen> {
                       foregroundColor: Colors.white,
                       title: Text(card.title),
                     ),
-                    body: UserProfileCard(card: card),
+                    body: UserProfileCard(card: card, accepted: true,),
                   ),
                 ),
               );
