@@ -50,14 +50,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isSignUpMode ? 'Account created!' : 'Welcome back!'),
-          ),
-        );
-        // StreamBuilder in main.dart reacts to auth change and routes automatically
-      }
     } on AuthException catch (e) {
       if (mounted) _showErrorSnackBar(e.message);
     } catch (e) {
