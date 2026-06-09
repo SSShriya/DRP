@@ -251,13 +251,13 @@ class MatchService {
   // for getting confirmed matches for an event
   Future<List<MatchCard>> getConfirmedMatchesForEvent(String eventId) async {
     final currentUserId = await loadUserId();
-    final rows = await _getConfirmedMatchRows(currentUserId);
+    final rows = await _getConfirmedMatchRows(currentUserId, eventId: eventId);
     return rows.map((row) => _rowToConfirmedMatchCard(row, currentUserId)).toList();
   }
 
-  Future<List<MatchCard>> getMutualMatches(String eventId) async {
-    final currentUserId = await loadUserId();
-    final rows = await _getConfirmedMatchRows(currentUserId, eventId: eventId);
+  Future<List<MatchCard>> getMutualMatches(String currentUserId) async {
+    // final currentUserId = await loadUserId();
+    final rows = await _getConfirmedMatchRows(currentUserId);
     return rows.map((row) => _rowToConfirmedMatchCard(row, currentUserId)).toList();
   }
   
@@ -277,7 +277,7 @@ class MatchService {
     var query = supabase
         .from('matches')
         .select(
-          'events(event_name), user1:user1_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest))',
+          'event_id, events(event_name), user1:user1_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest)), user2:user2_id(id, name, university, course, bio, year_group, location, avatar_url, user_interests(interest))',
         )
         .eq('user1_accepted', true)
         .eq('user2_accepted', true)
@@ -285,7 +285,7 @@ class MatchService {
   
     if (eventId != null) query = query.eq('event_id', eventId);
 
-    return (await query) as List<Map<String, dynamic>>;
+    return (await query);
   }
 
   // maps single row to a MatchCard
