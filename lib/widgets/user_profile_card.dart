@@ -20,67 +20,70 @@ class UserProfileCard extends StatelessWidget {
         children: [
           // -- Profile card --
           _Card(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Column(
               children: [
                 ProfilePicture(
                   name: card.title,
-                  radius: 40,
-                  fontsize: 32,
+                  radius: 60,
+                  fontsize: 48,
                   random: false,
                   img: card.imageUrl.isNotEmpty ? card.imageUrl : null,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        card.title,
+
+                const SizedBox(height: 10),
+
+                Text(
+                  card.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.school, size: 17),
+                    const SizedBox(width: 2),
+                    Text(
+                        '${card.yearGroup} · ${card.university} · ${card.course}',
                         style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.grey,
                         ),
-                      ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
 
-                      Row(
-                        children: [
-                          const Icon(Icons.school, size: 17),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              '${card.yearGroup} · ${card.university} · ${card.course}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                const SizedBox(height: 10),
 
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 17),
-                          Text(
-                            card.location,
-                            style: const TextStyle(fontSize: 16, color: Colors.grey,),
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                ),          
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on, size: 17),
+                    const SizedBox(width: 4),
+                    Text(
+                      card.location,
+                      style: const TextStyle(fontSize: 16, color: Colors.grey,),
+                    ),
+                  ],
+                ),
               ],
-            ),
+            )
           ),
 
           const SizedBox(height: 12),
 
           // ── Shared event ──
           _Card(
+            color: Color(0X8FE6AACE),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -93,7 +96,7 @@ class UserProfileCard extends StatelessWidget {
                   card.eventName.toUpperCase(),
                   style: const TextStyle(
                     fontSize: 16,
-                    color: Color(0xFF5DA9E9),
+                    color: Color(0xFF344966),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -105,6 +108,8 @@ class UserProfileCard extends StatelessWidget {
 
           // ── Interests ──
           _Card(
+            // color: Color.fromARGB(255, 221, 226, 243),
+            color: Color(0X8FBFCC94),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -135,12 +140,13 @@ class UserProfileCard extends StatelessWidget {
 
           // ── Bio ──
           _Card(
+            color: Color.fromARGB(255, 221, 226, 243),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Bio:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(card.bio, style: const TextStyle(fontSize: 16)),
@@ -216,7 +222,12 @@ class UserProfileCard extends StatelessWidget {
 
 class _Card extends StatelessWidget {
   final Widget child;
-  const _Card({required this.child});
+  final Color? color;
+
+  const _Card({
+    required this.child,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -224,9 +235,9 @@ class _Card extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: color ?? Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey),
+        // border: Border.all(color: Colors.grey),
       ),
       child: child,
     );
