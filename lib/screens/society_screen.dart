@@ -19,7 +19,6 @@ class SocietyScreen extends StatefulWidget {
 class _SocietyScreenState extends State<SocietyScreen> {
 
   String? _societyName;
-  String _aboutText = '';
   File? _imageFile;
   String? _existingImageUrl;
   bool _isLoading = false;
@@ -104,42 +103,40 @@ class _SocietyScreenState extends State<SocietyScreen> {
   }
 
   // Method to handle editing the About Me text area via a popup dialog
-  void _editAboutMe() {
-    final TextEditingController aboutController = TextEditingController(text: _aboutText);
+ void _editAboutMe() {
+  // Use a local copy so cancelling doesn't mutate state
+  final tempController = TextEditingController(text: _aboutController.text);
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit About Section', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: aboutController,
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: "Tell others about your society...",
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Edit About Section', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+      content: TextField(
+        controller: tempController,
+        maxLines: 4,
+        decoration: InputDecoration(
+          hintText: 'Tell others about your society...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _aboutText = aboutController.text.trim();
-                updateSocDetails(id: societyId, about: _aboutText);
-              });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0XFF84DCC6)),
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
-    );
-  }
-
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            setState(() => _aboutController.text = tempController.text.trim());
+            await updateSocDetails(id: societyId, about: _aboutController.text);
+            if (mounted) Navigator.pop(context);
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0XFF84DCC6)),
+          child: const Text('Save', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
   Future<void> _saveSocDetails() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -343,7 +340,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _aboutText.isNotEmpty ? _aboutText : "No description provided yet. Click the edit icon to write something!",
+                        _aboutController.text.isNotEmpty ? _aboutController.text : "No description provided yet. Click the edit icon to write something!",
                         style: GoogleFonts.montserrat(
                           fontSize: 14,
                           color: Colors.black87,
