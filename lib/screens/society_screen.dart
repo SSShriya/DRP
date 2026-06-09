@@ -44,7 +44,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
   }
 
   Future<void> _loadExistingProfile() async {
-    if (societyId == null) {
+    if (societyId.isEmpty) {
       if (mounted) _showError('User session not found. Please log in again.');
       if (mounted) setState(() => _isLoading = false);
       return;
@@ -143,7 +143,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
   Future<void> _saveSocDetails() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (societyId == null) {
+    if (societyId.isEmpty) {
       _showError('User session not found. Please log in again.');
       setState(() => _isLoading = false); // Reset spinner
       return;
