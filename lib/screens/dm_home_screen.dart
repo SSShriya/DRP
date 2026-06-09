@@ -68,16 +68,19 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
             fontSize: 22,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black, size: 28),
-            onPressed: _loadConversations,
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.refresh, color: Colors.black, size: 28),
+        //     onPressed: _loadConversations,
+        //   ),
+        // ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          : RefreshIndicator(
+            onRefresh: _loadConversations, 
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -135,10 +138,11 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
                         conversations: filteredOldConvos,
                         onRefresh: _loadConversations,
                       ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-    );
+            )
+          );
   }
 }
