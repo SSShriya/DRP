@@ -1,10 +1,9 @@
 import 'package:drp/models/match_card.dart';
 import 'package:drp/models/match_convo.dart';
 import 'package:drp/screens/dm_individual_screen.dart';
-import 'package:drp/services/utils.dart';
 import 'package:flutter/material.dart';
 
-class CongratsPopup extends StatefulWidget {
+class CongratsPopup extends StatelessWidget {
   final MatchCard match;
   final bool isMutual;
   final VoidCallback onGoHome;
@@ -15,19 +14,6 @@ class CongratsPopup extends StatefulWidget {
     required this.isMutual,
     required this.onGoHome,
   });
-
-  @override
-  State<CongratsPopup> createState() => _CongratsPopupState();
-}
-
-class _CongratsPopupState extends State<CongratsPopup> {
-  late final Future<String> _currentUserIdFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentUserIdFuture = loadUserId();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,68 +40,49 @@ class _CongratsPopupState extends State<CongratsPopup> {
             ),
             const SizedBox(height: 8),
             Text(
-              widget.match.title.toUpperCase(),
+              match.title.toUpperCase(),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
             // ── DM or waiting message ──
-            if (widget.isMutual)
-              FutureBuilder<String>(
-                future: _currentUserIdFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Color(0XFF8789C0)),
-                      ),
-                    );
-                  }
+            if (isMutual)
+              _button(
+                label: 'DM Now',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) {
+                      // ── Extract plain user ID from composite match ID ──
+                      final parts = match.id.split('|');
+                      final currentUserId =
+                          '5f7e9d61-3865-47b2-9155-202267ee947f';
+                      final otherUserId = parts[0] == currentUserId
+                          ? parts[1]
+                          : parts[0];
 
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return const Text(
-                      'Unable to load user data.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.red),
-                    );
-                  }
+                      // ── Build a clean MatchCard with just the plain user ID ──
+                      final dmCard = MatchCard(
+                        id: otherUserId,
+                        title: match.title,
+                        university: match.university,
+                        course: match.course,
+                        bio: match.bio,
+                        eventId: match.eventId,
+                        eventName: match.eventName,
+                        yearGroup: match.yearGroup,
+                        interests: match.interests,
+                        location: match.location,
+                        imageUrl: match.imageUrl,
+                      );
 
-                  final currentUserId = snapshot.data!;
-                  return _button(
-                    label: 'DM Now',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) {
-                          final parts = widget.match.id.split('|');
-                          final otherUserId = parts[0] == currentUserId
-                              ? parts[1]
-                              : parts[0];
-
-                          final dmCard = MatchCard(
-                            id: otherUserId,
-                            title: widget.match.title,
-                            university: widget.match.university,
-                            course: widget.match.course,
-                            bio: widget.match.bio,
-                            eventId: widget.match.eventId,
-                            eventName: widget.match.eventName,
-                            yearGroup: widget.match.yearGroup,
-                            interests: widget.match.interests,
-                            location: widget.match.location,
-                            imageUrl: widget.match.imageUrl,
-                          );
-
-                          return DMScreen(
-                            chat: ChatConversation(matchCard: dmCard),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
+                      return DMScreen(
+                        chat: ChatConversation(matchCard: dmCard),
+                      );
+                    },
+                  ),
+                ),
               )
             else
               Column(
@@ -127,7 +94,7 @@ class _CongratsPopupState extends State<CongratsPopup> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Waiting for ${widget.match.title} to accept...\nYou'll be able to DM once they do!",
+                    "Waiting for ${match.title} to accept...\nYou'll be able to DM once they do!",
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
