@@ -1,98 +1,14 @@
 import 'dart:async';
+import 'package:drp/models/dm_message.dart';
 import 'package:drp/services/utils.dart';
+import 'package:drp/widgets/dm_chat_header.dart';
+import 'package:drp/widgets/dm_input_bar.dart';
+import 'package:drp/widgets/dm_invitation_card.dart';
 import 'package:drp/widgets/dm_meeting_popup.dart';
+import 'package:drp/widgets/dm_pinned_banner.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_profile_picture/flutter_profile_picture.dart';
-import 'package:intl/intl.dart';
 import '../models/match_convo.dart';
 import '../services/conversation_service.dart';
-import '../widgets/user_profile_card.dart';
-
-// ─────────────────────────────────────────────
-// Data model
-// ─────────────────────────────────────────────
-
-class _Message {
-  final String id;
-  final String text;
-  final bool fromMe;
-  final bool isInvitation;
-  final DateTime createdAt;
-  final String? lastEditedBy;
-  bool? invitationStatus;
-
-  _Message({
-    required this.id,
-    required this.text,
-    required this.fromMe,
-    required this.createdAt,
-    this.isInvitation = false,
-    this.invitationStatus,
-    this.lastEditedBy,
-  });
-}
-
-// ─────────────────────────────────────────────
-// Tracked message widget
-// Records its global Y offset once rendered so
-// we can scroll to it even when off-screen.
-// ─────────────────────────────────────────────
-
-class _TrackedMessage extends StatefulWidget {
-  final GlobalKey messageKey;
-  final Widget child;
-  final void Function(double globalY) onOffset;
-
-  const _TrackedMessage({
-    required this.messageKey,
-    required this.child,
-    required this.onOffset,
-  });
-
-  @override
-  State<_TrackedMessage> createState() => _TrackedMessageState();
-}
-
-class _TrackedMessageState extends State<_TrackedMessage> {
-  void _recordOffset() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final box = context.findRenderObject() as RenderBox?;
-      if (box == null || !box.hasSize) return;
-
-      final scrollable = Scrollable.of(context);
-      final viewportBox = scrollable.context.findRenderObject() as RenderBox?;
-      if (viewportBox == null) return;
-
-      final offsetInViewport = box
-          .localToGlobal(Offset.zero, ancestor: viewportBox)
-          .dy;
-      final scrollOffset = scrollable.position.pixels + offsetInViewport;
-
-      widget.onOffset(scrollOffset);
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _recordOffset();
-  }
-
-  @override
-  void didUpdateWidget(_TrackedMessage old) {
-    super.didUpdateWidget(old);
-    _recordOffset(); // Re-record if widget was rebuilt in place
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      KeyedSubtree(key: widget.messageKey, child: widget.child);
-}
-
-// ─────────────────────────────────────────────
-// Screen
-// ─────────────────────────────────────────────
 
 class DMScreen extends StatefulWidget {
   final ChatConversation chat;
@@ -112,7 +28,7 @@ class _DMScreenState extends State<DMScreen> {
 
   // ── State ───────────────────────────────────
   late final String _myUserId;
-  List<_Message> _messages = [];
+  List<DmMessage> _messages = [];
   final List<GlobalKey> _messageKeys = [];
   bool _isLoading = true;
   bool _isReady = false;
@@ -120,9 +36,6 @@ class _DMScreenState extends State<DMScreen> {
 
   // ── Constants ───────────────────────────────
   static const _primaryColor = Color(0xFF8789C0);
-  static const _accentColor = Color(0xFF84DCC6);
-  static const _accentDark = Color(0xFF409A83);
-  static const _invitePrefix = 'INVITATION_DATA:';
 
   // ── Lifecycle ───────────────────────────────
 
@@ -165,8 +78,8 @@ class _DMScreenState extends State<DMScreen> {
 
       final fresh = rows.map((row) {
         final content = (row['content'] ?? '') as String;
-        final isInvite = content.startsWith(_invitePrefix);
-        return _Message(
+        final isInvite = content.startsWith(invitePrefix);
+        return DmMessage(
           id: row['message_id']?.toString() ?? '',
           text: content,
           fromMe: row['sender_id'] == _myUserId,
@@ -192,7 +105,6 @@ class _DMScreenState extends State<DMScreen> {
       setState(() {
         _messages = fresh;
         _isLoading = false;
-
         while (_messageKeys.length < _messages.length) {
           _messageKeys.add(GlobalKey());
         }
@@ -246,8 +158,8 @@ class _DMScreenState extends State<DMScreen> {
         return;
       }
 
-      // Path 2: widget is off-screen — jump to proportional estimate
-      // to force it to mount, then ensureVisible corrects the position
+      // Path 2: widget is off-screen — proportional jump to force mount,
+      // then ensureVisible corrects the final position
       final estimated =
           (index / _messages.length) *
           _scrollController.position.maxScrollExtent;
@@ -259,12 +171,11 @@ class _DMScreenState extends State<DMScreen> {
         ),
       );
 
-      // Wait two frames for layout and paint to complete
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
 
       final mountedCtx = _messageKeys[index].currentContext;
-      if (mountedCtx != null) {
+      if (mountedCtx != null && mountedCtx.mounted) {
         await Scrollable.ensureVisible(
           mountedCtx,
           duration: const Duration(milliseconds: 400),
@@ -273,34 +184,6 @@ class _DMScreenState extends State<DMScreen> {
         );
       }
     });
-  }
-
-  // ── Invitation payload helpers ───────────────
-
-  /// Builds the raw INVITATION_DATA string from a result map.
-  String _buildInvitePayload(Map result) =>
-      '$_invitePrefix{'
-      '"date":"${result['date']}",'
-      '"time":"${result['time']}",'
-      '"location":"${result['location'] ?? ''}"'
-      '}';
-
-  /// Extracts date/time/location strings from a raw invite payload.
-  ({String date, String time, String location}) _parseInvitePayload(
-    String text,
-  ) {
-    final data = text.replaceFirst(_invitePrefix, '');
-    String pick(RegExp re) {
-      final m = re.firstMatch(data);
-      return m != null ? m.group(1)! : 'Not specified';
-    }
-
-    final loc = pick(RegExp(r'"location":"([^"]*)"'));
-    return (
-      date: pick(RegExp(r'"date":"([^"]+)"')),
-      time: pick(RegExp(r'"time":"([^"]+)"')),
-      location: loc.isEmpty ? 'Not specified' : loc,
-    );
   }
 
   // ── Actions ─────────────────────────────────
@@ -318,7 +201,7 @@ class _DMScreenState extends State<DMScreen> {
 
     setState(() {
       _messages.add(
-        _Message(id: id, text: text, fromMe: true, createdAt: DateTime.now()),
+        DmMessage(id: id, text: text, fromMe: true, createdAt: DateTime.now()),
       );
       _messageKeys.add(GlobalKey());
     });
@@ -332,7 +215,7 @@ class _DMScreenState extends State<DMScreen> {
     );
     if (result == null) return;
 
-    final payload = _buildInvitePayload(result);
+    final payload = buildInvitePayload(result);
     final id = await _conversationService.recordMessage(
       payload,
       _myUserId,
@@ -341,7 +224,7 @@ class _DMScreenState extends State<DMScreen> {
 
     setState(() {
       _messages.add(
-        _Message(
+        DmMessage(
           id: id,
           text: payload,
           fromMe: true,
@@ -356,7 +239,7 @@ class _DMScreenState extends State<DMScreen> {
 
   void _editMeeting(int index) async {
     final msg = _messages[index];
-    final parsed = _parseInvitePayload(msg.text);
+    final parsed = parseInvitePayload(msg.text);
 
     final result = await showDialog<Map>(
       context: context,
@@ -370,7 +253,7 @@ class _DMScreenState extends State<DMScreen> {
     );
     if (result == null) return;
 
-    final payload = _buildInvitePayload(result);
+    final payload = buildInvitePayload(result);
     await _conversationService.updateInvitationContent(
       msg.id,
       payload,
@@ -378,7 +261,7 @@ class _DMScreenState extends State<DMScreen> {
     );
 
     setState(() {
-      _messages[index] = _Message(
+      _messages[index] = DmMessage(
         id: msg.id,
         text: payload,
         fromMe: msg.fromMe,
@@ -441,9 +324,9 @@ class _DMScreenState extends State<DMScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: _accentColor.withValues(alpha: 0.2),
+                      color: const Color(0xFF84DCC6).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _accentColor),
+                      border: Border.all(color: const Color(0xFF84DCC6)),
                     ),
                     child: Text(prompt, style: const TextStyle(fontSize: 14)),
                   ),
@@ -462,42 +345,6 @@ class _DMScreenState extends State<DMScreen> {
     );
   }
 
-  // ── Date / time formatters ───────────────────
-
-  String _formatGroupDate(DateTime dt) {
-    final now = DateTime.now();
-    bool sameDay(DateTime a, DateTime b) =>
-        a.year == b.year && a.month == b.month && a.day == b.day;
-    if (sameDay(dt, now)) return 'Today';
-    if (sameDay(dt, now.subtract(const Duration(days: 1)))) return 'Yesterday';
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';
-  }
-
-  String _formatTime(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-
-  String _formatDate(String raw) {
-    try {
-      return DateFormat('EEE, MMM d yyyy').format(DateTime.parse(raw));
-    } catch (_) {
-      return raw;
-    }
-  }
-
   // ── Build ────────────────────────────────────
 
   @override
@@ -508,7 +355,11 @@ class _DMScreenState extends State<DMScreen> {
         if (!didPop) Navigator.pop(context, true);
       },
       child: Scaffold(
-        appBar: _buildAppBar(),
+        appBar: DmChatHeader(
+          chat: widget.chat,
+          onSuggestMeeting: _suggestMeeting,
+          onShowHints: _showHints,
+        ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : AnimatedOpacity(
@@ -516,9 +367,16 @@ class _DMScreenState extends State<DMScreen> {
                 duration: const Duration(milliseconds: 150),
                 child: Column(
                   children: [
-                    _buildPinnedInviteBanner(),
+                    DmPinnedBanner(
+                      messages: _messages,
+                      onTap: _scrollToMessage,
+                    ),
                     Expanded(child: _buildMessageList()),
-                    _buildInputBar(),
+                    DmInputBar(
+                      controller: _textController,
+                      recipientName: widget.chat.name,
+                      onSend: _send,
+                    ),
                   ],
                 ),
               ),
@@ -526,60 +384,7 @@ class _DMScreenState extends State<DMScreen> {
     );
   }
 
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: _accentColor,
-      foregroundColor: Colors.white,
-      title: GestureDetector(
-        onTap: () {
-          final card = widget.chat.matchCard;
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => Scaffold(
-                appBar: AppBar(
-                  backgroundColor: _accentColor,
-                  foregroundColor: Colors.white,
-                  title: Text(card.title),
-                ),
-                body: UserProfileCard(card: card, accepted: true),
-              ),
-            ),
-          );
-        },
-        child: Row(
-          children: [
-            ProfilePicture(
-              name: widget.chat.name,
-              radius: 20,
-              fontsize: 16,
-              random: false,
-              img: (widget.chat.imageUrl?.isNotEmpty ?? false)
-                  ? widget.chat.imageUrl
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Text(widget.chat.name),
-          ],
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.event),
-          iconSize: 36,
-          tooltip:
-              'Suggest a time/place to meet ${widget.chat.name} before ${widget.chat.event}!',
-          onPressed: _suggestMeeting,
-        ),
-        IconButton(
-          icon: const Icon(Icons.lightbulb_outline),
-          iconSize: 36,
-          tooltip: 'Prompts to help you chat with ${widget.chat.name}',
-          onPressed: _showHints,
-        ),
-      ],
-    );
-  }
+  // ── Message list ─────────────────────────────
 
   Widget _buildMessageList() {
     return ListView(
@@ -588,7 +393,6 @@ class _DMScreenState extends State<DMScreen> {
       children: [
         const SizedBox(height: 16),
 
-        // Event banner
         if (widget.chat.event.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -606,7 +410,6 @@ class _DMScreenState extends State<DMScreen> {
 
         const SizedBox(height: 12),
 
-        // Interests card
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Container(
@@ -656,13 +459,11 @@ class _DMScreenState extends State<DMScreen> {
           ),
         ),
 
-        // Messages with date headers
         ..._buildGroupedMessages(),
       ],
     );
   }
 
-  /// Builds message bubbles interleaved with date-group headers.
   List<Widget> _buildGroupedMessages() {
     final widgets = <Widget>[];
 
@@ -672,7 +473,7 @@ class _DMScreenState extends State<DMScreen> {
 
       // Date header
       if (prev == null ||
-          _formatGroupDate(prev.createdAt) != _formatGroupDate(msg.createdAt)) {
+          formatGroupDate(prev.createdAt) != formatGroupDate(msg.createdAt)) {
         widgets.add(
           Center(
             child: Container(
@@ -683,7 +484,7 @@ class _DMScreenState extends State<DMScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                _formatGroupDate(msg.createdAt),
+                formatGroupDate(msg.createdAt),
                 style: const TextStyle(fontSize: 12, color: Colors.black87),
               ),
             ),
@@ -691,11 +492,16 @@ class _DMScreenState extends State<DMScreen> {
         );
       }
 
-      // Message bubble or invitation card, both tracked for scroll
       final Widget content = msg.isInvitation
           ? Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildInvitationBox(msg, i),
+              child: DmInvitationCard(
+                msg: msg,
+                index: i,
+                myUserId: _myUserId,
+                onEdit: _editMeeting,
+                onRespond: _handleInvitationResponse,
+              ),
             )
           : Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -734,7 +540,7 @@ class _DMScreenState extends State<DMScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _formatTime(msg.createdAt),
+                      formatTime(msg.createdAt),
                       style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                     ),
                   ],
@@ -746,320 +552,5 @@ class _DMScreenState extends State<DMScreen> {
     }
 
     return widgets;
-  }
-
-  Widget _buildInvitationBox(_Message msg, int index) {
-    final parsed = _parseInvitePayload(msg.text);
-    final isPending = msg.invitationStatus == null;
-    final lastEditedByMe = msg.lastEditedBy == _myUserId;
-    final shouldShowButtons =
-        !lastEditedByMe &&
-        (msg.lastEditedBy != null || (!msg.fromMe && msg.lastEditedBy == null));
-
-    return Align(
-      alignment: msg.fromMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.75,
-        margin: const EdgeInsets.only(bottom: 12, top: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _primaryColor, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: const BoxDecoration(
-                color: _primaryColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    msg.fromMe ? 'Meeting Sent' : 'Meeting Invitation',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Body
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '📅 Date: ${_formatDate(parsed.date)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '⏰ Time: ${parsed.time}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '📍 Location: ${parsed.location}',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                  ),
-                  const Divider(height: 16),
-
-                  if (isPending) ...[
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () => _editMeeting(index),
-                        icon: const Icon(Icons.edit, size: 14),
-                        label: const Text(
-                          'Edit',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: _primaryColor,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (shouldShowButtons)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.red),
-                                foregroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onPressed: () =>
-                                  _handleInvitationResponse(index, false),
-                              child: const Text(
-                                'Reject',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _accentColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                              onPressed: () =>
-                                  _handleInvitationResponse(index, true),
-                              child: const Text(
-                                'Accept',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      const Center(
-                        child: Text(
-                          'Waiting for reply...',
-                          style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                  ] else
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: msg.invitationStatus == true
-                              ? _accentColor.withValues(alpha: 0.2)
-                              : Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          msg.invitationStatus == true
-                              ? 'Accepted ✓'
-                              : 'Declined ✕',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: msg.invitationStatus == true
-                                ? _accentDark
-                                : Colors.red,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPinnedInviteBanner() {
-    final index = _messages.lastIndexWhere(
-      (m) => m.isInvitation && m.invitationStatus != false,
-    );
-    if (index == -1) return const SizedBox.shrink();
-
-    final msg = _messages[index];
-    final parsed = _parseInvitePayload(msg.text);
-
-    final (statusText, statusColor) = switch (msg.invitationStatus) {
-      true => ('Accepted ✓', _accentDark),
-      false => ('Declined ✕', Colors.red),
-      _ => ('Pending', Colors.orange),
-    };
-
-    return GestureDetector(
-      onTap: () => _scrollToMessage(index),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: _primaryColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _primaryColor.withValues(alpha: 0.4),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.push_pin, size: 16, color: _primaryColor),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Pinned Meeting',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: _primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '📅 ${_formatDate(parsed.date)}  ⏰ ${parsed.time}',
-                    style: const TextStyle(fontSize: 12, color: Colors.black87),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                statusText,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: statusColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputBar() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                textCapitalization: TextCapitalization.sentences,
-                onSubmitted: (_) => _send(),
-                decoration: InputDecoration(
-                  hintText: 'Message ${widget.chat.name}...',
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade200,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            CircleAvatar(
-              backgroundColor: _accentColor,
-              child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                onPressed: _send,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
