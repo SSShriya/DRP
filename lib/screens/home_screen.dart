@@ -57,14 +57,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     setState(() => _loading = true);
     try {
       final userId = await loadUserId();
-      debugPrint('userId: $userId');
 
       final matches = await _matchService.getPendingMatches(userId);
-      debugPrint('matches loaded: ${matches.length}');
       final events = await _eventService.getInterestedEvents(userId);
-      debugPrint('events loaded: ${events.length}');
       final awaiting = await _matchService.getAwaitingResponseMatches(userId);
-      debugPrint('awaiting loaded: ${awaiting.length}');
       setState(() {
         _pendingMatches = matches;
         _awaitingMatches = awaiting;
