@@ -292,7 +292,7 @@ class _DMScreenState extends State<DMScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.location_on),
+              icon: const Icon(Icons.event),
               onPressed: _suggestMeeting,
               tooltip:
                   'Suggest a time/place to meet ${widget.chat.name} before ${widget.chat.event}!',
@@ -315,165 +315,149 @@ class _DMScreenState extends State<DMScreen> {
                 duration: const Duration(milliseconds: 150),
                 child: Column(
                   children: [
-                    const SizedBox(height: 16),
                     Expanded(
-                      child: CustomScrollView(
+                      child: ListView(
                         controller: _scrollController,
-                        slivers: [
-                          SliverFillRemaining(
-                            hasScrollBody: false,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (widget.chat.event.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'You are both going to: ${widget.chat.event.toUpperCase()}',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(height: 12),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    0,
-                                    16,
-                                    8,
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0XFFEEC0C6),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${widget.chat.name}\'s Interests:',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        ...widget.chat.interests.map(
-                                          (interest) => Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 4,
-                                            ),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  '★ ',
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color: Colors.black,
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Text(
-                                                    interest,
-                                                    style: const TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.black,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                        padding: const EdgeInsets.only(bottom: 8),
+                        children: [
+                          const SizedBox(height: 16),
+
+                          // Event banner
+                          if (widget.chat.event.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'You are both going to: ${widget.chat.event.toUpperCase()}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black54,
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
+                              ),
+                            ),
+
+                          const SizedBox(height: 12),
+
+                          // Interests card
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0XFFEEC0C6),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${widget.chat.name}\'s Interests:',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: List.generate(_messages.length, (
-                                      index,
-                                    ) {
-                                      final msg = _messages[index];
-                                      if (msg.isInvitation) {
-                                        return _buildInvitationBox(msg, index);
-                                      }
-                                      return Align(
-                                        alignment: msg.fromMe
-                                            ? Alignment.centerRight
-                                            : Alignment.centerLeft,
-                                        child: Container(
-                                          margin: const EdgeInsets.only(
-                                            bottom: 8,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 10,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: msg.fromMe
-                                                ? const Color(0XFF8789C0)
-                                                : Colors.grey.shade200,
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: const Radius.circular(
-                                                16,
-                                              ),
-                                              topRight: const Radius.circular(
-                                                16,
-                                              ),
-                                              bottomLeft: Radius.circular(
-                                                msg.fromMe ? 16 : 0,
-                                              ),
-                                              bottomRight: Radius.circular(
-                                                msg.fromMe ? 0 : 16,
-                                              ),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            msg.text,
+                                  const SizedBox(height: 6),
+                                  ...widget.chat.interests.map(
+                                    (interest) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 4),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            '★ ',
                                             style: TextStyle(
-                                              color: msg.fromMe
-                                                  ? Colors.white
-                                                  : Colors.black87,
-                                              fontSize: 15,
+                                              fontSize: 13,
+                                              color: Colors.black,
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    }),
+                                          Expanded(
+                                            child: Text(
+                                              interest,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
+
+                          // Messages
+                          ...List.generate(_messages.length, (index) {
+                            final msg = _messages[index];
+                            if (msg.isInvitation) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: _buildInvitationBox(msg, index),
+                              );
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 4,
+                              ),
+                              child: Align(
+                                alignment: msg.fromMe
+                                    ? Alignment.centerRight
+                                    : Alignment.centerLeft,
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: msg.fromMe
+                                        ? const Color(0XFF8789C0)
+                                        : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(16),
+                                      topRight: const Radius.circular(16),
+                                      bottomLeft: Radius.circular(
+                                        msg.fromMe ? 16 : 0,
+                                      ),
+                                      bottomRight: Radius.circular(
+                                        msg.fromMe ? 0 : 16,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    msg.text,
+                                    style: TextStyle(
+                                      color: msg.fromMe
+                                          ? Colors.white
+                                          : Colors.black87,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
                         ],
                       ),
                     ),
+
+                    // Input bar — unchanged
                     SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
