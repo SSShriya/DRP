@@ -216,7 +216,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       children: [
                         const Expanded(
                           child: Text(
-                            "Are you here to advertise events?",
+                            "Are you signing up as a CLUB/SOCIETY?",
                             style: TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),

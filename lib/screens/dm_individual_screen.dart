@@ -1,3 +1,4 @@
+import 'dart:async'; // 1. Imported for Timer support
 import 'package:drp/services/utils.dart';
 import 'package:drp/widgets/dm_meeting_popup.dart';
 import 'package:flutter/material.dart';
@@ -23,12 +24,27 @@ class _DMScreenState extends State<DMScreen> {
   bool _isLoading = true;
   bool _isReady = false;
   late final ScrollController _scrollController;
+  
+  // 2. Reference link tracker for the periodic interval hook
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _loadMessages();
+    _initChatAndStartPolling();
+  }
+
+  // 3. Setup sequential initialization: get userId background values, pull historical UI data, then spin loop
+  Future<void> _initChatAndStartPolling() async {
+    myUserId = await loadUserId();
+    // Immediate initial sync pull
+    await _loadMessages(forceScroll: true);
+    
+    // Periodically execution block firing precisely down to 1-second ticks
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _loadMessages(forceScroll: false);
+    });
   }
 
   void _scrollToBottom() {
@@ -36,41 +52,57 @@ class _DMScreenState extends State<DMScreen> {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
-      setState(() => _isReady = true);
+      if (!_isReady) setState(() => _isReady = true);
     });
   }
 
-  Future<void> _loadMessages() async {
-    myUserId = await loadUserId(); 
+  // 4. Enhanced database sync mechanism tracking length updates to conditionally slide screen focus
+  Future<void> _loadMessages({bool forceScroll = false}) async {
     try {
       final fetchedMaps = await _conversationService.getMessages(
         myUserId,
         widget.chat.otherUserId,
       );
-      setState(() {
-        _messages = fetchedMaps.map((row) {
-          final senderId = row['sender_id'] as String;
-          final content = row['content'] ?? '';
+      
+      final List<_Message> freshMessages = fetchedMaps.map((row) {
+        final senderId = row['sender_id'] as String;
+        final content = row['content'] ?? '';
 
-          // Checks if it is a local rich client object OR the string fallback recorded in database tables
-          final isInvite =
-              content.startsWith('INVITATION_DATA:') ||
-              content == 'Invitation sent.';
+        final isInvite =
+            content.startsWith('INVITATION_DATA:') ||
+            content == 'Invitation sent.';
 
-          return _Message(
-            text: content,
-            fromMe: senderId == myUserId,
-            isInvitation: isInvite,
-            invitationStatus: isInvite ? 'pending' : null,
-          );
-        }).toList();
-        _isLoading = false;
-      });
-      _scrollToBottom();
+        return _Message(
+          text: content,
+          fromMe: senderId == myUserId,
+          isInvitation: isInvite,
+          invitationStatus: isInvite ? 'pending' : null,
+        );
+      }).toList();
+
+      // Check if data metrics changed before updating visual element arrays
+      final bool hasNewMessages = freshMessages.length != _messages.length;
+
+      if (mounted) {
+        setState(() {
+          _messages = freshMessages;
+          _isLoading = false;
+        });
+
+        // Only move focus down if forced or when a novel string entry appears
+        if (forceScroll || hasNewMessages) {
+          _scrollToBottom();
+        } else if (!_isReady) {
+          setState(() => _isReady = true);
+        }
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isReady = true;
+        });
+      }
       debugPrint("Error fetching messages: $e");
     }
   }
@@ -105,7 +137,6 @@ class _DMScreenState extends State<DMScreen> {
           "}";
 
       setState(() {
-        // Render rich graphical box inside local view interface immediately
         _messages.add(
           _Message(
             text: rawInvitePayload,
@@ -115,7 +146,6 @@ class _DMScreenState extends State<DMScreen> {
           ),
         );
 
-        // Write standard text transaction identifier label value down to backend tables
         _conversationService.recordMessage(
           'Invitation sent.',
           myUserId,
@@ -144,8 +174,10 @@ class _DMScreenState extends State<DMScreen> {
     );
   }
 
+  // 5. Explicit disposal cleanups ensuring garbage collecting clears the active continuous ticks
   @override
   void dispose() {
+    _pollingTimer?.cancel(); // Kill background timer interval
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -250,9 +282,9 @@ class _DMScreenState extends State<DMScreen> {
                   random: false,
                   img:
                       widget.chat.imageUrl != null &&
-                          widget.chat.imageUrl!.isNotEmpty
-                      ? widget.chat.imageUrl
-                      : null,
+                              widget.chat.imageUrl!.isNotEmpty
+                          ? widget.chat.imageUrl
+                          : null,
                 ),
                 const SizedBox(width: 12),
                 Text(widget.chat.name),
@@ -499,7 +531,6 @@ class _DMScreenState extends State<DMScreen> {
     String extractedTime = "Details saved";
     String extractedLoc = "Check event panel updates";
 
-    // Prevent parsing errors if structural payload was omitted when saving back to server database
     if (msg.text == 'Invitation sent.') {
       extractedDate = "Details in notification";
       extractedTime = "Details in notification";

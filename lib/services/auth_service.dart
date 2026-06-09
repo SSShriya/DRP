@@ -26,10 +26,6 @@ class AuthService {
       'university': '',
       'course': '',
       'bio': '',
-    });
-
-    await supabase.from('user_purpose').insert({
-      'user_id': user.id,
       'is_committee_member': isCommitteeMember,
     });
 
