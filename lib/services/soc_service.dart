@@ -4,8 +4,8 @@ import 'supabase_client.dart';
 
 Future<void> updateSocDetails({required String id, String? about, String? uni}) async {
   await supabase
-    .from('societies')
-    .update({'description': ?about, 'university': ?uni})
+    .from('users')
+    .update({'bio': ?about, 'university': ?uni})
     .eq('id', id);
 }
 
@@ -26,8 +26,8 @@ Future<void> uploadSocImage(File imageFile, String socId) async {
         .getPublicUrl(filePath);
 
     await supabase
-        .from('societies')
-        .update({'image_url': publicUrl})
+        .from('users')
+        .update({'avatar_url': publicUrl})
         .eq('id', socId);
   } on StorageException catch (e) {
     throw Exception('Failed to upload profile picture: ${e.message}');

@@ -54,9 +54,9 @@ class _SocietyScreenState extends State<SocietyScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Fetch user row from your users table
+      // Fetch society row from your users table
       final socData = await supabase
-          .from('societies')
+          .from('users')
           .select()
           .eq('id', societyId)
           .maybeSingle();
