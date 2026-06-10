@@ -193,10 +193,15 @@ class UserProfileCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ── Interests + photos ────────────────────────────────────────
-          _buildInterestsWithPhotos(context),
+          // ── Interests ──
+          _buildInterests(),
 
           const SizedBox(height: 12),
+
+          // ── Photo Gallery ──
+          _buildGallery(context),
+
+          if (card.interestPhotos.isNotEmpty) const SizedBox(height: 12),
 
           // ── Bio ───────────────────────────────────────────────────────
           _Card(
@@ -264,10 +269,8 @@ class UserProfileCard extends StatelessWidget {
     );
   }
 
-  // ── Interests card with inline photos ────────────────────────────────────
-  // Interests without a photo → plain bullet list (unchanged feel)
-  // Interests with a photo    → tappable row that opens a full-screen viewer
-  Widget _buildInterestsWithPhotos(BuildContext context) {
+  // ── Interests card — pure star bullets ───────────────────────────────────
+  Widget _buildInterests() {
     return _Card(
       color: const Color(0X8FBFCC94),
       child: Column(
@@ -277,98 +280,147 @@ class UserProfileCard extends StatelessWidget {
             'Interests:',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
-          ...card.interests.asMap().entries.map((entry) {
-            final index = entry.key;
-            final interest = entry.value;
-            final photoUrl = card.interestPhotos[interest];
-            final hasPhoto = photoUrl != null;
-            final displayName =
-                interest[0].toUpperCase() + interest.substring(1);
-            final isLast = index == card.interests.length - 1;
-
-            return Column(
-              children: [
-                GestureDetector(
-                  onTap: hasPhoto
-                      ? () => _showFullScreenImage(context, photoUrl, interest)
-                      : null,
-                  child: SizedBox(
-                    height: 56,
-                    child: Row(
-                      children: [
-                        // ── Thumbnail or placeholder ─────────────────────
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: hasPhoto
-                              ? Image.network(
-                                  photoUrl,
-                                  width: 48,
-                                  height: 48,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, progress) {
-                                    if (progress == null) return child;
-                                    return _photoPlaceholder(isEmpty: false);
-                                  },
-                                  errorBuilder: (_, _, _) =>
-                                      _photoPlaceholder(isEmpty: true),
-                                )
-                              : _photoPlaceholder(isEmpty: true),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // ── Interest label ───────────────────────────────
-                        Expanded(
-                          child: Text(
-                            displayName,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-
-                        // ── Expand icon (only if has photo) ──────────────
-                        if (hasPhoto)
-                          Icon(
-                            Icons.open_in_full_rounded,
-                            size: 15,
-                            color: Colors.grey.shade600,
-                          )
-                        else
-                          // Keeps row widths consistent
-                          const SizedBox(width: 15),
-                      ],
+          const SizedBox(height: 3),
+          ...card.interests.map(
+            (interest) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('★ ', style: TextStyle(fontSize: 16)),
+                  Expanded(
+                    child: Text(
+                      interest[0].toUpperCase() + interest.substring(1),
+                      style: const TextStyle(fontSize: 16),
                     ),
                   ),
-                ),
-                if (!isLast)
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: Colors.black.withValues(alpha: 0.06),
-                  ),
-              ],
-            );
-          }),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ── Placeholder box shown when there is no photo ─────────────────────────
-  Widget _photoPlaceholder({required bool isEmpty}) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        isEmpty ? Icons.image_outlined : Icons.hourglass_empty,
-        size: 20,
-        color: Colors.black26,
+  // ── Polaroid photo gallery card ───────────────────────────────────────────
+  Widget _buildGallery(BuildContext context) {
+    // Only show if at least one interest has a photo
+    if (card.interestPhotos.isEmpty) return const SizedBox.shrink();
+
+    // Only include interests that actually have a photo
+    final photoInterests = card.interests
+        .where((i) => card.interestPhotos.containsKey(i))
+        .toList();
+
+    if (photoInterests.isEmpty) return const SizedBox.shrink();
+
+    return _Card(
+      color: const Color.fromARGB(202, 255, 229, 181),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Photos:',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+
+          SizedBox(
+            height: 200,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: photoInterests.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final interest = photoInterests[index];
+                final photoUrl = card.interestPhotos[interest]!;
+                final displayName =
+                    interest[0].toUpperCase() + interest.substring(1);
+
+                return GestureDetector(
+                  onTap: () =>
+                      _showFullScreenImage(context, photoUrl, interest),
+                  child: Container(
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 6,
+                          offset: const Offset(2, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ── Photo ────────────────────────────────────────
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(2),
+                              child: Image.network(
+                                photoUrl,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(
+                                    color: Colors.grey.shade200,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFF84DCC6),
+                                            ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (_, _, _) => Container(
+                                  color: Colors.grey.shade200,
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    color: Colors.grey.shade400,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // ── Caption ──────────────────────────────────────
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 6,
+                          ),
+                          child: Text(
+                            displayName,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                              fontFamily: 'Courier',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
