@@ -223,7 +223,7 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ElevatedButton(
-                        onPressed: (_isLoading || _societyCard == null)
+                        onPressed: (_isLoading || _societyCard == null || !_isUserInterestedInCurrentEvent())
                             ? null
                             : () async {
                                 final navigator = Navigator.of(context);
