@@ -91,7 +91,9 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
 
   Future<void> _checkUserInterestedEvents() async {
     try {
-      List<EventCard> interestedEvents = await eventService.getInterestedEvents(userId);
+      List<EventCard> interestedEvents = await eventService.getInterestedEvents(
+        userId,
+      );
       if (mounted) {
         setState(() {
           _userInterestedEvents.clear();
@@ -115,8 +117,6 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
           _about = data['about'] ?? '';
           _location = data['location'] ?? '';
           _imageUrl = data['image_url'] ?? '';
-          
-          _buildSocietyCard();
         });
       }
     } catch (e) {
@@ -135,8 +135,8 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
       yearGroup: 'N/A',
       location: _location,
       interests: const [],
-      imageUrl: _imageUrl, 
-      currentUserId: userId, 
+      imageUrl: _imageUrl,
+      currentUserId: userId,
       otherUserId: widget.societyId,
     );
   }
@@ -149,18 +149,20 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
   }
 
   Future<void> _initiateSocietyChat() async {
-    await supabase.from('matches').insert({
+    await supabase.from('matches').upsert({
       'user1_id': widget.societyId,
       'user2_id': userId,
       'event_id': widget.eventId,
       'user1_accepted': true,
       'user2_accepted': true,
-    });
+    }, onConflict: 'user1_id,user2_id,event_id');
   }
 
   // Helper check to see if the event item collection contains our current target ID
   bool _isUserInterestedInCurrentEvent() {
-    return _userInterestedEvents.any((element) => element.eventId == widget.eventId);
+    return _userInterestedEvents.any(
+      (element) => element.eventId == widget.eventId,
+    );
   }
 
   @override
@@ -223,7 +225,10 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ElevatedButton(
-                        onPressed: (_isLoading || _societyCard == null || !_isUserInterestedInCurrentEvent())
+                        onPressed:
+                            (_isLoading ||
+                                _societyCard == null ||
+                                !_isUserInterestedInCurrentEvent())
                             ? null
                             : () async {
                                 final navigator = Navigator.of(context);
@@ -249,8 +254,8 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                           (_isLoading || _societyCard == null)
                               ? "Loading..."
                               : (_isUserInterestedInCurrentEvent()
-                                  ? "Message"
-                                  : "Express interest in an event to message!"),
+                                    ? "Message"
+                                    : "Express interest in an event to message!"),
                         ),
                       ),
                     ],
@@ -300,81 +305,82 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : _events.isEmpty
-                          ? const Text('No events listed.')
-                          : ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _events.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 8),
-                              itemBuilder: (context, i) {
-                                final event = _events[i];
-                                return InkWell(
-                                  onTap: () => _openEventSummary(event),
+                      ? const Text('No events listed.')
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _events.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (context, i) {
+                            final event = _events[i];
+                            return InkWell(
+                              onTap: () => _openEventSummary(event),
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.6),
                                   borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.6),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: event.imageUrl.isNotEmpty
-                                              ? Image.network(
-                                                  event.imageUrl,
-                                                  width: 60,
-                                                  height: 60,
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : Container(
-                                                  width: 60,
-                                                  height: 60,
-                                                  color: const Color(0XFFC0EDF7),
-                                                  child: const Icon(
-                                                    Icons.event,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                event.title,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: event.imageUrl.isNotEmpty
+                                          ? Image.network(
+                                              event.imageUrl,
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Container(
+                                              width: 60,
+                                              height: 60,
+                                              color: const Color(0XFFC0EDF7),
+                                              child: const Icon(
+                                                Icons.event,
+                                                color: Colors.white,
                                               ),
-                                              if (event.subtitle.isNotEmpty) ...[
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  event.subtitle,
-                                                  style: const TextStyle(
-                                                    fontSize: 13,
-                                                    color: Colors.black54,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                        const Icon(
-                                          Icons.chevron_right,
-                                          color: Colors.black38,
-                                        ),
-                                      ],
+                                            ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            event.title,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (event.subtitle.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              event.subtitle,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.black54,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.black38,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ],
               ),
             ),
