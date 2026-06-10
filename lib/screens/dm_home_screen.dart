@@ -108,13 +108,20 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
     //     .where((chat) => chat.isSociety)
     //     .toList();
 
-    // 3. Keep non-society matches and partition them by age
-    final filteredNewConvos = filteredConversations
+    // 3. Keep non-society matches and partition them by relevance
+    final filteredCurrentConvos = filteredConversations
         .where((chat) => !chat.isSociety && _isChatCurrent(chat))
         .toList();
 
+    final currentChatUserIds = filteredCurrentConvos
+      .map((chat) => chat.otherUserId)
+      .toSet();
+
     final filteredOldConvos = filteredConversations
-        .where((chat) => !chat.isSociety && !_isChatCurrent(chat))
+        .where((chat) => 
+          !chat.isSociety && 
+          !_isChatCurrent(chat) && 
+          !currentChatUserIds.contains(chat.otherUserId))
         .toList();
 
     return Scaffold(
@@ -192,10 +199,10 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
                       )
                     else ...[
                       // New Chats Section
-                      if (filteredNewConvos.isNotEmpty)
+                      if (filteredCurrentConvos.isNotEmpty)
                         ChatSection(
                           title: 'Current Chats',
-                          conversations: filteredNewConvos,
+                          conversations: filteredCurrentConvos,
                           onRefresh: _loadConversations,
                         ),
                         
