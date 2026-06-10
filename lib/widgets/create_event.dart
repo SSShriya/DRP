@@ -1,5 +1,6 @@
 import 'dart:io';
-
+import 'package:drp/widgets/pick_location_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +14,8 @@ class NewEventData {
   final DateTime endDate;
   final TimeOfDay endTime;
   final String location;
+  final double? latitude;
+  final double? longitude;
   final double price;
   final String? description;
   final File? image;
@@ -24,6 +27,8 @@ class NewEventData {
     required this.endDate,
     required this.endTime,
     required this.location,
+    required this.latitude,
+    required this.longitude,
     required this.price,
     this.description,
     this.image,
@@ -40,6 +45,8 @@ Future<NewEventData?> showNewEventPopup(
   DateTime? existingEndDate,
   TimeOfDay? existingEndTime,
   String? existingLocation,
+  double? existingLatitude,
+  double? existingLongitude,
   double? existingPrice,
   String? existingDescription,
 }) {
@@ -53,6 +60,8 @@ Future<NewEventData?> showNewEventPopup(
       existingEndDate: existingEndDate,
       existingEndTime: existingEndTime,
       existingLocation: existingLocation,
+      existingLongitude: existingLongitude,
+      existingLatitude: existingLatitude,
       existingPrice: existingPrice,
       existingDescription: existingDescription,
     ),
@@ -68,6 +77,8 @@ class _CreateEventForm extends StatefulWidget {
   final DateTime? existingEndDate;
   final TimeOfDay? existingEndTime;
   final String? existingLocation;
+  final double? existingLatitude;
+  final double? existingLongitude;
   final double? existingPrice;
   final String? existingDescription;
 
@@ -78,6 +89,8 @@ class _CreateEventForm extends StatefulWidget {
     this.existingEndDate,
     this.existingEndTime,
     this.existingLocation,
+    this.existingLongitude,
+    this.existingLatitude,
     this.existingPrice,
     this.existingDescription,
   });
@@ -104,6 +117,9 @@ class _CreateEventFormState extends State<_CreateEventForm> {
   DateTime? _endDate;
   TimeOfDay? _endTime;
 
+  // Location
+  LatLng? _pickedLocation;
+
   File? _imageFile;
   bool _isSaving = false;
 
@@ -112,17 +128,31 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     super.initState();
     // Pre-populate text controllers with existing data or default to empty strings
     _nameController = TextEditingController(text: widget.existingName ?? '');
-    _locationController = TextEditingController(text: widget.existingLocation ?? '');
-    _priceController = TextEditingController(
-      text: widget.existingPrice != null ? widget.existingPrice!.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '') : '',
+    _locationController = TextEditingController(
+      text: widget.existingLocation ?? '',
     );
-    _descController = TextEditingController(text: widget.existingDescription ?? '');
+    _priceController = TextEditingController(
+      text: widget.existingPrice != null
+          ? widget.existingPrice!
+                .toStringAsFixed(2)
+                .replaceAll(RegExp(r'\.00$'), '')
+          : '',
+    );
+    _descController = TextEditingController(
+      text: widget.existingDescription ?? '',
+    );
 
     // Pre-populate dates and times
     _startDate = widget.existingStartDate;
     _startTime = widget.existingStartTime;
     _endDate = widget.existingEndDate;
     _endTime = widget.existingEndTime;
+
+    // pre-populate coords
+    _pickedLocation =
+        (widget.existingLatitude != null && widget.existingLongitude != null)
+        ? LatLng(widget.existingLatitude!, widget.existingLongitude!)
+        : null;
   }
 
   @override
@@ -144,8 +174,12 @@ class _CreateEventFormState extends State<_CreateEventForm> {
 
   Future<void> _pickDate({required bool isStart}) async {
     final now = DateTime.now();
-    final initial = isStart ? (_startDate ?? now) : (_endDate ?? _startDate ?? now);
-    final first = isStart ? (widget.existingStartDate ?? now) : (_startDate ?? now);
+    final initial = isStart
+        ? (_startDate ?? now)
+        : (_endDate ?? _startDate ?? now);
+    final first = isStart
+        ? (widget.existingStartDate ?? now)
+        : (_startDate ?? now);
 
     final picked = await showDatePicker(
       context: context,
@@ -154,7 +188,10 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       lastDate: DateTime(now.year + 3),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: _teal, onPrimary: Colors.white),
+          colorScheme: const ColorScheme.light(
+            primary: _teal,
+            onPrimary: Colors.white,
+          ),
         ),
         child: child!,
       ),
@@ -180,7 +217,10 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       initialTime: initial,
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: _teal, onPrimary: Colors.white),
+          colorScheme: const ColorScheme.light(
+            primary: _teal,
+            onPrimary: Colors.white,
+          ),
         ),
         child: child!,
       ),
@@ -191,8 +231,28 @@ class _CreateEventFormState extends State<_CreateEventForm> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
     if (file != null) setState(() => _imageFile = File(file.path));
+  }
+
+  Future<void> _pickLocation() async {
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PickLocationMap(initialLocation: _pickedLocation),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _pickedLocation = result;
+        _locationController.text =
+            '${result.latitude.toStringAsFixed(5)}, ${result.longitude.toStringAsFixed(5)}';
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -208,12 +268,18 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     }
 
     final startDT = DateTime(
-      _startDate!.year, _startDate!.month, _startDate!.day,
-      _startTime!.hour, _startTime!.minute,
+      _startDate!.year,
+      _startDate!.month,
+      _startDate!.day,
+      _startTime!.hour,
+      _startTime!.minute,
     );
     final endDT = DateTime(
-      _endDate!.year, _endDate!.month, _endDate!.day,
-      _endTime!.hour, _endTime!.minute,
+      _endDate!.year,
+      _endDate!.month,
+      _endDate!.day,
+      _endTime!.hour,
+      _endTime!.minute,
     );
 
     if (!endDT.isAfter(startDT)) {
@@ -230,8 +296,12 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       endDate: _endDate!,
       endTime: _endTime!,
       location: _locationController.text.trim(),
+      latitude: _pickedLocation?.latitude,
+      longitude: _pickedLocation?.longitude,
       price: double.tryParse(_priceController.text.trim()) ?? 0,
-      description: _descController.text.trim().isEmpty ? null : _descController.text.trim(),
+      description: _descController.text.trim().isEmpty
+          ? null
+          : _descController.text.trim(),
       image: _imageFile,
     );
 
@@ -259,7 +329,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
             // Header adapts conditionally based on mode
             Container(
               width: double.infinity,
-              color: _teal,
+              color: Color.fromARGB(255, 131, 187, 219),
               padding: const EdgeInsets.symmetric(vertical: 18),
               child: Text(
                 isEditingMode ? 'EDIT EVENT' : 'NEW EVENT',
@@ -282,82 +352,220 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _ImagePicker(file: _imageFile, onTap: _pickImage),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 25),
 
                       _field(
                         controller: _nameController,
                         label: 'Event Name',
                         icon: Icons.celebration_outlined,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Enter a name' : null,
+                            ? 'Enter a name'
+                            : null,
                       ),
                       const SizedBox(height: 14),
 
-                      _SectionLabel(label: 'START', color: _teal),
+                      _SectionLabel(
+                        label: 'Start Date & Time',
+                        color: Colors.black,
+                      ),
                       const SizedBox(height: 8),
-                      Row(children: [
-                        Expanded(
-                          child: _DateTimeTile(
-                            icon: Icons.calendar_today_outlined,
-                            value: _fmt(_startDate),
-                            onTap: () => _pickDate(isStart: true),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _pickDate(isStart: true),
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: 'Date',
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.always,
+                                  prefixIcon: const Icon(
+                                    Icons.calendar_today_outlined,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(_fmt(_startDate)),
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _DateTimeTile(
-                            icon: Icons.access_time_outlined,
-                            value: _fmtTime(_startTime),
-                            onTap: () => _pickTime(isStart: true),
+
+                          const SizedBox(width: 10),
+
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _pickTime(isStart: true),
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: 'Time',
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.always,
+                                  prefixIcon: const Icon(
+                                    Icons.access_time_outlined,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(_fmtTime(_startTime)),
+                              ),
+                            ),
                           ),
-                        ),
-                      ]),
+                        ],
+                      ),
                       const SizedBox(height: 14),
 
-                      _SectionLabel(label: 'END', color: _teal),
+                      _SectionLabel(
+                        label: 'End Date & Time',
+                        color: Colors.black,
+                      ),
                       const SizedBox(height: 8),
-                      Row(children: [
-                        Expanded(
-                          child: _DateTimeTile(
-                            icon: Icons.calendar_today_outlined,
-                            value: _fmt(_endDate),
-                            onTap: () => _pickDate(isStart: false),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _pickDate(isStart: false),
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: 'Date',
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.always,
+                                  prefixIcon: const Icon(
+                                    Icons.calendar_today_outlined,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(_fmt(_endDate)),
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _DateTimeTile(
-                            icon: Icons.access_time_outlined,
-                            value: _fmtTime(_endTime),
-                            onTap: () => _pickTime(isStart: false),
+
+                          const SizedBox(width: 10),
+
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _pickTime(isStart: false),
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: 'Time',
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.always,
+                                  prefixIcon: const Icon(
+                                    Icons.access_time_outlined,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(_fmtTime(_endTime)),
+                              ),
+                            ),
                           ),
-                        ),
-                      ]),
+                        ],
+                      ),
                       const SizedBox(height: 14),
 
-                      _field(
+                      TextFormField(
                         controller: _locationController,
-                        label: 'Location',
-                        icon: Icons.location_on_outlined,
+                        decoration: InputDecoration(
+                          labelText: 'Location',
+                          hintText: 'Type an address or pick on map',
+                          prefixIcon: Icon(
+                            _pickedLocation != null
+                                ? Icons.location_pin
+                                : Icons.location_on_outlined,
+                            color: _pickedLocation != null
+                                ? const Color(0xFF84DCC6)
+                                : null,
+                          ),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Clear pin button — only shown when a pin exists
+                              if (_pickedLocation != null)
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  tooltip: 'Clear map pin',
+                                  onPressed: () =>
+                                      setState(() => _pickedLocation = null),
+                                ),
+                              // Map picker button
+                              IconButton(
+                                icon: const Icon(Icons.map_outlined),
+                                tooltip: 'Pick on map',
+                                onPressed: _pickLocation,
+                              ),
+                            ],
+                          ),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Enter a location' : null,
+                            ? 'Enter a location'
+                            : null,
+                        onChanged: (_) {
+                          // If user edits text manually, detach the map pin
+                          if (_pickedLocation != null) {
+                            setState(() => _pickedLocation = null);
+                          }
+                        },
                       ),
+
+                      // Optional: small "pinned" indicator below the field
+                      if (_pickedLocation != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6, left: 4),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.push_pin,
+                                size: 14,
+                                color: Color(0xFF84DCC6),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Map pin attached',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
                       const SizedBox(height: 14),
 
                       _field(
                         controller: _priceController,
                         label: 'Price (£)',
                         icon: Icons.currency_pound_outlined,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d{0,2}'),
+                          ),
                         ],
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Enter a price (0 if free)';
-                          if (double.tryParse(v.trim()) == null) return 'Enter a valid number';
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Enter a price (0 if free)';
+                          }
+                          if (double.tryParse(v.trim()) == null) {
+                            return 'Enter a valid number';
+                          }
                           return null;
                         },
                       ),
+
                       const SizedBox(height: 14),
 
                       _field(
@@ -366,26 +574,34 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                         icon: Icons.notes_outlined,
                         maxLines: 3,
                       ),
+
                       const SizedBox(height: 24),
 
                       _ActionButton(
-                        label: _isSaving ? '' : (isEditingMode ? 'SAVE CHANGES' : 'CREATE EVENT'),
-                        color: _teal,
+                        label: _isSaving
+                            ? ''
+                            : (isEditingMode ? 'SAVE CHANGES' : 'CREATE EVENT'),
+                        color: Color.fromARGB(255, 164, 204, 228),
                         onPressed: _isSaving ? null : _save,
                         child: _isSaving
                             ? const SizedBox(
-                                height: 20, width: 20,
+                                height: 20,
+                                width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : null,
                       ),
+
                       const SizedBox(height: 10),
+
                       _ActionButton(
                         label: 'Cancel',
-                        color: Colors.grey.shade300,
+                        color: const Color.fromARGB(255, 217, 218, 219),
                         foreground: _dark,
                         onPressed: () => Navigator.of(context).pop(),
                       ),
@@ -406,40 +622,21 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     required String label,
     required IconData icon,
     String? Function(String?)? validator,
+    int maxLines = 1,
+
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
-    int maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      maxLines: maxLines,
       validator: validator,
+      maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20),
-        filled: true,
-        fillColor: Colors.grey.shade100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0XFF84DCC6), width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: 16, vertical: maxLines > 1 ? 14 : 0,
-        ),
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -456,53 +653,10 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       label,
       style: GoogleFonts.montserrat(
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.4,
+        fontSize: 12,
+        fontWeight: FontWeight.normal,
+        letterSpacing: 1.2,
         color: color,
-      ),
-    );
-  }
-}
-
-class _DateTimeTile extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final VoidCallback onTap;
-
-  const _DateTimeTile({
-    required this.icon,
-    required this.value,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isPlaceholder = value.startsWith('Select');
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.grey.shade500),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isPlaceholder ? Colors.grey.shade400 : const Color(0XFF222222),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -530,12 +684,18 @@ class _ImagePicker extends StatelessWidget {
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add_photo_alternate_outlined,
-                      size: 32, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.add_photo_alternate_outlined,
+                    size: 32,
+                    color: const Color(0xFF4D5359),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     'Add banner image (optional)',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: const Color(0xFF4D5359),
+                    ),
                   ),
                 ],
               )
@@ -546,7 +706,11 @@ class _ImagePicker extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 14,
                     backgroundColor: const Color(0XFF84DCC6),
-                    child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                    child: const Icon(
+                      Icons.edit,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -580,12 +744,18 @@ class _ActionButton extends StatelessWidget {
           backgroundColor: color,
           foregroundColor: foreground,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        child: child ??
+        child:
+            child ??
             Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+              ),
             ),
       ),
     );

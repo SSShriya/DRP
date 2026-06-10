@@ -24,6 +24,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
   File? _imageFile;
   String? _existingImageUrl;
   bool _isLoading = false;
+  bool _showArchived = false;
 
   final List<Map<String, String>> _events = [];
 
@@ -78,24 +79,46 @@ class _SocietyScreenState extends State<SocietyScreen> {
 
           // Pre-populate events list
           _events.clear();
-          _events.addAll(
-            (eventsData as List).map(
-              (e) => {
-                'id': '${e['event_id']}',
-                'title': e['event_name'],
-                // 'start_date':
-                //     '${DateFormat('EEE d MMMM yyyy').format(DateTime.parse(e['start_day']))} at ${DateFormat('HH:mm').format(DateTime.parse(e['start_time']))}',
-                // 'end_date':
-                //     '${DateFormat('EEE d MMMM yyyy').format(DateTime.parse(e['end_day']))} at ${DateFormat('HH:mm').format(DateTime.parse(e['end_time']))}',
-                'start_date':
-                    '${DateFormat('EEE d MMMM yyyy').format(DateTime.parse(e['start_day']))} at ${DateFormat('HH:mm').format(DateTime.parse('1970-01-01T${e['start_time']}'))}',
-                'end_date':
-                    '${DateFormat('EEE d MMMM yyyy').format(DateTime.parse(e['end_day']))} at ${DateFormat('HH:mm').format(DateTime.parse('1970-01-01T${e['end_time']}'))}',
-                'location': e['location'],
-                'cost': '${e['cost']}',
-              },
-            ),
-          );
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+
+          for (final e in (eventsData as List)) {
+            final endDay = DateTime.tryParse(e['end_day'] ?? '');
+            final isPast = endDay != null && endDay.isBefore(today);
+            final entry = <String, String>{
+              'id': '${e['event_id']}',
+              'title': e['event_name'] ?? '',
+              'start_date':
+                  '${DateFormat('EEE d MMM yyyy').format(DateTime.parse(e['start_day']))} at ${DateFormat('HH:mm').format(DateTime.parse('1970-01-01T${e['start_time']}'))}',
+              'end_date':
+                  '${DateFormat('EEE d MMM yyyy').format(DateTime.parse(e['end_day']))} at ${DateFormat('HH:mm').format(DateTime.parse('1970-01-01T${e['end_time']}'))}',
+              'location': e['location'] ?? '',
+              'cost': '${e['cost']}',
+              'latitude': '${e['latitude'] ?? ''}',
+              'longitude': '${e['longitude'] ?? ''}',
+              'is_past': isPast ? 'true' : 'false',
+              'end_day_raw': e['end_day'] ?? '',
+              'start_day_raw': e['start_day'] ?? '',
+            };
+            _events.add(entry);
+          }
+
+          // Sort: active events closest to now first, past events newest first
+          _events.sort((a, b) {
+            final aDate =
+                DateTime.tryParse(a['start_day_raw']!) ?? DateTime.now();
+            final bDate =
+                DateTime.tryParse(b['start_day_raw']!) ?? DateTime.now();
+            final aIsPast = a['is_past'] == 'true';
+            final bIsPast = b['is_past'] == 'true';
+            if (aIsPast != bIsPast) {
+              return aIsPast ? 1 : -1;
+            } // active before archived
+            if (!aIsPast) {
+              return aDate.compareTo(bDate);
+            } // active: soonest first
+            return bDate.compareTo(aDate); // archived: most recent first
+          });
         });
       }
     } on PostgrestException catch (e) {
@@ -204,6 +227,8 @@ class _SocietyScreenState extends State<SocietyScreen> {
       context,
       existingName: event['title'],
       existingLocation: event['location'],
+      existingLatitude: double.tryParse(event['latitude'] ?? ''),
+      existingLongitude: double.tryParse(event['longitude'] ?? ''),
       existingPrice: double.tryParse(event['cost'] ?? '0') ?? 0.0,
       existingStartDate: parsedStartDate,
       existingStartTime: parsedStartTime,
@@ -234,6 +259,8 @@ class _SocietyScreenState extends State<SocietyScreen> {
             'location': result.location,
             'cost': result.price,
             if (result.description != null) 'description': result.description,
+            if (result.latitude != null) 'latitude': result.latitude,
+            if (result.longitude != null) 'longitude': result.longitude,
           })
           .eq('event_id', eventId);
 
@@ -316,6 +343,8 @@ class _SocietyScreenState extends State<SocietyScreen> {
         'location': result.location,
         'cost': result.price,
         if (result.description != null) 'description': result.description,
+        if (result.latitude != null) 'latitude': result.latitude,
+        if (result.longitude != null) 'longitude': result.longitude,
       });
 
       await _loadExistingProfile(); // refresh events list
@@ -324,6 +353,62 @@ class _SocietyScreenState extends State<SocietyScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _eventCard(Map<String, String> event, {bool isPast = false}) {
+    return Opacity(
+      opacity: isPast ? 0.55 : 1.0,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: Color(0X4F3E92CC),
+        child: ListTile(
+          onTap: isPast ? null : () => _editEvent(event),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: (isPast ? Colors.grey : const Color(0XFF84DCC6))
+                  .withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.calendar_today,
+              color: isPast ? Colors.grey : const Color(0xFF4D5359),
+            ),
+          ),
+          title: Text(
+            event['title']!,
+            style: GoogleFonts.montserrat(
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              color: isPast ? Colors.grey : Colors.black87,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              "${event['start_date']} • ${event['location']}",
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                color: const Color(0xFF4D5359),
+              ),
+            ),
+          ),
+          trailing: isPast
+              ? null
+              : const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey,
+                ),
+        ),
+      ),
+    );
   }
 
   // Logout now signs out from Supabase + confirms with user first
@@ -432,7 +517,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
                       right: 4,
                       child: CircleAvatar(
                         radius: 18,
-                        backgroundColor: Color(0XFF84DCC6),
+                        backgroundColor: Color(0xFF4D5359),
                         child: Icon(
                           Icons.add_a_photo,
                           size: 16,
@@ -456,14 +541,13 @@ class _SocietyScreenState extends State<SocietyScreen> {
               ),
               const SizedBox(height: 24),
 
-              // 3. Container Card housing the "About" Description Box
+              // -- about the soc --
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-                color: Colors.white,
+                color: Color(0X5F79C99E),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -473,19 +557,19 @@ class _SocietyScreenState extends State<SocietyScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            "ABOUT ME",
+                            "ABOUT THE SOCIETY",
                             style: GoogleFonts.montserrat(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.1,
-                              color: Colors.grey.shade600,
+                              color: Color(0xFF4D5359),
                             ),
                           ),
                           IconButton(
                             icon: const Icon(
                               Icons.edit,
                               size: 18,
-                              color: Color(0xFFEBA6A9),
+                              color: Color(0xFF4D5359),
                             ),
                             onPressed: _editAboutMe,
                             constraints: const BoxConstraints(),
@@ -500,7 +584,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
                             : "No description provided yet. Click the edit icon to write something!",
                         style: GoogleFonts.montserrat(
                           fontSize: 14,
-                          color: Colors.black87,
+                          color: Color(0x9F4D5359),
                           height: 1.5,
                         ),
                       ),
@@ -510,7 +594,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
               ),
               const SizedBox(height: 32),
 
-              // 4. "YOUR EVENTS" Section Header with Plus Floating Action Style Button
+              // -- your events --
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -527,7 +611,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text("New Event"),
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0XFF84DCC6),
+                      foregroundColor: const Color(0xFF4D5359),
                       textStyle: GoogleFonts.montserrat(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -538,82 +622,103 @@ class _SocietyScreenState extends State<SocietyScreen> {
               ),
               const SizedBox(height: 12),
 
-              // 5. Scrollable Column of Event Cards
-              _events.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Text(
-                        "You haven't listed any events yet.",
-                        style: GoogleFonts.montserrat(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _events.length,
-                      itemBuilder: (context, index) {
-                        final event = _events[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          color: Colors.white,
-                          child: ListTile(
-                            onTap: () => _editEvent(event),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            leading: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0XFF84DCC6,
-                                ).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.calendar_today,
-                                color: Color(0XFF84DCC6),
-                              ),
-                            ),
-                            title: Text(
-                              event['title']!,
-                              style: GoogleFonts.montserrat(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                "${event['start_date']} • ${event['location']}",
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 14,
+              // ── Active events ──────────────────────────────────────────
+              Builder(
+                builder: (_) {
+                  final active = _events
+                      .where((e) => e['is_past'] != 'true')
+                      .toList();
+                  final archived = _events
+                      .where((e) => e['is_past'] == 'true')
+                      .toList();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (active.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Text(
+                            "No upcoming events. Tap + New Event to add one.",
+                            style: GoogleFonts.montserrat(
                               color: Colors.grey,
+                              fontSize: 14,
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        )
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: active.length,
+                          itemBuilder: (context, index) =>
+                              _eventCard(active[index]),
+                        ),
+
+                      // ── Archived toggle ────────────────────────────────────
+                      if (archived.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () =>
+                              setState(() => _showArchived = !_showArchived),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 4,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Past events (${archived.length})',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF4D5359),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                AnimatedRotation(
+                                  turns: _showArchived ? 0.5 : 0,
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Icon(
+                                    Icons.keyboard_arrow_down,
+                                    size: 18,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        AnimatedCrossFade(
+                          firstChild: const SizedBox(width: double.infinity),
+                          secondChild: ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: archived.length,
+                            itemBuilder: (context, index) =>
+                                _eventCard(archived[index], isPast: true),
+                          ),
+                          crossFadeState: _showArchived
+                              ? CrossFadeState.showSecond
+                              : CrossFadeState.showFirst,
+                          duration: const Duration(milliseconds: 250),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+
               ElevatedButton(
                 onPressed: _isLoading ? null : _logout,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0XFFFD5757),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.all(16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
