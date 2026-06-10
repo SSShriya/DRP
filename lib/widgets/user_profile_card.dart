@@ -202,11 +202,8 @@ class UserProfileCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Add between Bio card and Block button in build():
-          if (card.galleryUrls.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _buildGallery(),
-          ],
+          // -- Photo Gallery --
+          if (card.galleryUrls.isNotEmpty) ...[_buildGallery()],
 
           const SizedBox(height: 16),
 
@@ -437,6 +434,7 @@ class UserProfileCard extends StatelessWidget {
 
   Widget _buildGallery() {
     return _Card(
+      color: Color.fromARGB(202, 255, 229, 181),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
