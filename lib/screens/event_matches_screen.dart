@@ -54,7 +54,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
     setState(() => _loadingByEvent[eventId] = true);
     final matches = await _matchService.getConfirmedMatchesForEvent(eventId);
 
-    if (!mounted) return; 
+    if (!mounted) return;
     setState(() {
       _matchesByEvent[eventId] = matches;
       _loadingByEvent[eventId] = false;
@@ -130,11 +130,11 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Tap here to find out more!', 
+                    'Tap here to find out more!',
                     style: TextStyle(
-                      fontSize: 15, 
+                      fontSize: 15,
                       color: const Color(0XFF224488).withValues(alpha: 0.8),
-                    )
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Divider(color: Color(0xFF222222), thickness: 0.3),
@@ -222,7 +222,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
               child: Padding(
                 padding: EdgeInsets.all(32),
                 child: Text(
-                  'No confirmed matches for this event yet.',
+                  'No connections for this event yet.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -239,7 +239,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                         backgroundColor: const Color(0XFF84DCC6),
                         foregroundColor: Colors.white,
                       ),
-                      body: UserProfileCard(card: match, accepted: true,),
+                      body: UserProfileCard(card: match, accepted: true),
                     ),
                   ),
                 ),

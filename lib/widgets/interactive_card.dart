@@ -62,7 +62,9 @@ class InteractiveCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${eventCard.numMatches} confirmed ${eventCard.numMatches == 1 ? 'match' : 'matches'}',
+                          eventCard.numMatches == 0
+                              ? 'No one yet!'
+                              : '${eventCard.numMatches} ${eventCard.numMatches == 1 ? 'friend' : 'friends'}',
                           style: const TextStyle(
                             color: Color(0xFF222222),
                             fontSize: 11,

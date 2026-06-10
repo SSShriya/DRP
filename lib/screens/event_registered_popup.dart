@@ -2,7 +2,7 @@ import 'package:drp/screens/main_shell.dart';
 import 'package:flutter/material.dart';
 
 class EventRegisteredPopup extends StatelessWidget {
-  final String eventName; 
+  final String eventName;
 
   const EventRegisteredPopup({super.key, required this.eventName});
 
@@ -38,7 +38,7 @@ class EventRegisteredPopup extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "Your matches for this event will be displayed on the homescreen as soon as possible!",
+              "Your connections for this event will be displayed on the homescreen as soon as possible!",
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16),
             ),
@@ -47,7 +47,9 @@ class EventRegisteredPopup extends StatelessWidget {
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const MainShell(initialIndex: 1)),
+                  MaterialPageRoute(
+                    builder: (context) => const MainShell(initialIndex: 1),
+                  ),
                 );
               },
               style: TextButton.styleFrom(

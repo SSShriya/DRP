@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
                 // -- New matches --
                 Text(
-                  'New Matches !!',
+                  'New Connections !!',
                   style: GoogleFonts.bitter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -208,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
-                      'No new matches yet',
+                      'No new connections yet',
                       style: GoogleFonts.merriweather(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -365,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Click to see event details and your existing friends!',
+                    'Tap an event to see who you\'re going with!',
                     style: GoogleFonts.merriweather(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -400,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "People to Review",
+                    "Discover More People",
                     style: GoogleFonts.lora(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -408,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Curated people who are also interested in your events!',
+                    'Connect with others going to your events!',
                     style: GoogleFonts.merriweather(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -456,7 +456,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'No potential matches yet, come back later',
+                        'No one to connect with yet - check back soon!',
                         style: GoogleFonts.merriweather(
                           fontSize: 14,
                           color: Colors.grey[600],
