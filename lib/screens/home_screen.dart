@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   void dispose() {
     routeObserver.unsubscribe(
       this,
-    ); // 👈 Critical: Always clean up to prevent memory leaks!
+    );
     super.dispose();
   }
 
@@ -71,12 +71,24 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       final mutual = await _matchService.getMutualMatches(userId);
 
       setState(() {
-        _pendingMatches = matches;
-        _awaitingMatches = awaiting;
-        _mutualMatches = mutual;
-        _loading = false;
         _interestedEvents = events
           ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+
+
+        // reusing the alr filtered event ids from getInterestedEvents
+        final activeEventIds = _interestedEvents.map((e) => e.eventId).toSet();
+        
+        _pendingMatches = matches
+          .where((m) => activeEventIds.contains(m.eventId))
+          .toList();
+        _awaitingMatches = awaiting
+          .where((m) => activeEventIds.contains(m.eventId))
+          .toList();
+        _mutualMatches = mutual
+          .where((m) => activeEventIds.contains(m.eventId))
+          .toList();
+        
+        _loading = false;
       });
     } catch (e) {
       debugPrint('Error: $e');
@@ -112,7 +124,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           initialIndex: initialIndex < 0 ? 0 : initialIndex,
           onDecision: _handleDecision,
           onGoHome: () {
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            });
           },
         ),
       ),
