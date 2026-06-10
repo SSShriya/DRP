@@ -13,6 +13,8 @@ class NewEventData {
   final DateTime endDate;
   final TimeOfDay endTime;
   final String location;
+  // final double? latitude;
+  // final double? longitude;
   final double price;
   final String? description;
   final File? image;
@@ -24,6 +26,8 @@ class NewEventData {
     required this.endDate,
     required this.endTime,
     required this.location,
+    // required this.latitude,
+    // required this.longitude,
     required this.price,
     this.description,
     this.image,
