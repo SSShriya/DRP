@@ -183,4 +183,31 @@ class ConversationService {
       debugPrint('updateInvitationContent error: $e');
     }
   }
+
+  // Used for sorting DMs by fetching eventEndTimes
+  Future<Map<String, ({String endDay, String endTime})>> getEventEndTimes(
+    List<String> eventIds,
+  ) async {
+    // No need to query if there's nothing to look up
+    if (eventIds.isEmpty) return {};
+
+    final rows = await supabase
+        .from('events')
+        .select('event_id, end_day, end_time')
+        .inFilter('event_id', eventIds); // ✅ fetches only the relevant events
+
+    final result = <String, ({String endDay, String endTime})>{};
+
+    for (final row in rows as List) {
+      final eventId = row['event_id'] as String? ?? '';
+      final endDay = row['end_day'] as String? ?? '';
+      final endTime = row['end_time'] as String? ?? '';
+
+      if (eventId.isNotEmpty) {
+        result[eventId] = (endDay: endDay, endTime: endTime);
+      }
+    }
+
+    return result;
+  }
 }

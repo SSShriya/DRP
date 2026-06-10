@@ -18,6 +18,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
   // For filtering events
   String? _selectedEventId; 
   List<MapEntry<String, String>> _eventFilters = [];
+  Map<String, ({String endDay, String endTime})> _eventEndTimes = {};
 
   String _searchQuery = '';
 
@@ -31,21 +32,48 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
     setState(() => isLoading = true);
     final convos = await _conversationService.getConversations();
 
-    // Derive (eventId, eventName) pairs from conversations
-    final seen = <String>{}; 
-    final filters = <MapEntry<String, String>>[]; 
+    final eventIds = convos
+      .map((c) => c.eventId)
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList();
+    
+    final endTimes = await _conversationService.getEventEndTimes(eventIds);
 
+    // Event filter chips
+    final seen = <String>{};
+    final filters = <MapEntry<String, String>>[];
     for (final chat in convos) {
       if (seen.add(chat.eventId)) {
-        filters.add(MapEntry(chat.eventId, chat.event)); 
+        filters.add(MapEntry(chat.eventId, chat.event));
       }
     }
 
     setState(() {
       _conversations = convos;
+      _eventEndTimes = endTimes; 
       _eventFilters = filters; 
       isLoading = false;
     });
+  }
+
+  bool _isChatCurrent(ChatConversation chat) {
+    final endTimeEntry = _eventEndTimes[chat.eventId];
+
+    // If we have no end time data, default to treating it as current
+    if (endTimeEntry == null) return true;
+
+    final endDay = endTimeEntry.endDay;
+    final endTime = endTimeEntry.endTime;
+
+    if (endDay.isEmpty || endTime.isEmpty) return true;
+
+    try {
+      final endDateTime = DateTime.parse('$endDay $endTime');
+      return DateTime.now().isBefore(endDateTime);
+    } catch (_) {
+      return true; // default to current if parsing fails
+    }
   }
 
   /// Returns conversations that satisfy both the text search query
@@ -80,13 +108,13 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
     //     .where((chat) => chat.isSociety)
     //     .toList();
 
-    // 3. Keep non-society matches and partition them strictly by activity metrics
+    // 3. Keep non-society matches and partition them by age
     final filteredNewConvos = filteredConversations
-        .where((chat) => !chat.isSociety && chat.numMessages <= 0)
+        .where((chat) => !chat.isSociety && _isChatCurrent(chat))
         .toList();
 
     final filteredOldConvos = filteredConversations
-        .where((chat) => !chat.isSociety && chat.numMessages > 0)
+        .where((chat) => !chat.isSociety && !_isChatCurrent(chat))
         .toList();
 
     return Scaffold(
@@ -166,7 +194,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
                       // New Chats Section
                       if (filteredNewConvos.isNotEmpty)
                         ChatSection(
-                          title: 'New Chats',
+                          title: 'Current Chats',
                           conversations: filteredNewConvos,
                           onRefresh: _loadConversations,
                         ),
@@ -174,7 +202,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
                       // Existing Chats Section
                       if (filteredOldConvos.isNotEmpty)
                         ChatSection(
-                          title: 'Existing Chats',
+                          title: 'Old Chats',
                           conversations: filteredOldConvos,
                           onRefresh: _loadConversations,
                         ),
