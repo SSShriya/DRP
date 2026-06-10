@@ -44,7 +44,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> {
     final seen = <String>{};
     final filters = <MapEntry<String, String>>[];
     for (final chat in convos) {
-      if (seen.add(chat.eventId)) {
+      if (_isChatCurrent(chat) && seen.add(chat.eventId)) {
         filters.add(MapEntry(chat.eventId, chat.event));
       }
     }
