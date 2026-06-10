@@ -240,9 +240,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ).hasMatch(value.trim())) {
                         return 'Please enter a valid email address';
                       }
-                      if (!value.trim().toLowerCase().endsWith('.ac.uk')) {
-                        return 'Please use your university email address (.ac.uk)';
-                      }
+                      // if (!value.trim().toLowerCase().endsWith('.ac.uk')) {
+                      //   return 'Please use your university email address (.ac.uk)';
+                      // }
                       return null;
                     },
                   ),
