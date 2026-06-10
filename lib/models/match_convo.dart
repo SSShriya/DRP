@@ -19,6 +19,14 @@ class ChatConversation {
     this.isSociety = false,
   });
 
+  factory ChatConversation.fromJson(Map<String, dynamic> json) {
+    return ChatConversation(
+      matchCard: MatchCard.fromJson(json),
+      isSociety: json['event_id'] != null,
+      numMessages: json['num_messages'] ?? 0,
+    );
+  }
+
   String get name => matchCard.title;
   String get otherUserId => matchCard.id;
   String get event => matchCard.eventName;

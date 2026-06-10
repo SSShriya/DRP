@@ -5,13 +5,20 @@ import 'package:drp/screens/dm_individual_screen.dart';
 import 'package:drp/screens/event_profile_screen.dart';
 import 'package:drp/services/event_service.dart';
 import 'package:drp/services/soc_service.dart';
+import 'package:drp/services/supabase_client.dart';
+import 'package:drp/services/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
 
 class SocietyInfoScreen extends StatefulWidget {
   final String societyId;
+  final String eventId; // users can only reach this screen through an event
 
-  const SocietyInfoScreen({super.key, required this.societyId});
+  const SocietyInfoScreen({
+    super.key,
+    required this.societyId,
+    required this.eventId,
+  });
 
   @override
   State<SocietyInfoScreen> createState() => _SocietyInfoScreenState();
@@ -26,6 +33,7 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
   String _imageUrl = '';
   bool _isLoading = false;
   MatchCard? _societyCard;
+  late final String userId;
 
   final EventService eventService = EventService();
 
@@ -41,8 +49,9 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
   Future<void> _loadScreenData() async {
     setState(() => _isLoading = true);
 
-    await _setupEvents(); // 1. Fully load events first
-    await _getSocietyInfo(); // 2. Then load society info using those events
+    await _setupEvents();
+    await _getSocietyInfo();
+    userId = await loadUserId();
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -107,6 +116,17 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
       context,
       MaterialPageRoute(builder: (context) => EventProfileScreen(card: card)),
     );
+  }
+
+  Future<void> _initiateSocietyChat() async {
+    // add to conversations list so society appears on dm homescreen
+    await supabase.from('matches').insert({
+      'user1_id': widget.societyId,
+      'user2_id': userId,
+      'event_id': widget.eventId,
+      'user1_accepted': true,
+      'user2_accepted': true,
+    });
   }
 
   @override
@@ -178,9 +198,12 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                       ElevatedButton(
                         onPressed: (_isLoading || _societyCard == null)
                             ? null
-                            : () {
-                                Navigator.push(
-                                  context,
+                            : () async {
+                                final navigator = Navigator.of(context);
+                                await _initiateSocietyChat();
+                                if (!mounted) return;
+
+                                navigator.push(
                                   MaterialPageRoute(
                                     builder: (context) => DMScreen(
                                       chat: ChatConversation(
@@ -255,8 +278,7 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _events.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 8),
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (context, i) {
                             final event = _events[i];
                             return InkWell(
