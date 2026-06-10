@@ -36,15 +36,6 @@ Future<void> uploadSocImage(File imageFile, String socId) async {
   }
 }
 
-Future<List<String>> getEventsBySociety(String societyId) async {
-  final events = await supabase
-                      .from('events')
-                      .select('event_name')
-                      .eq('society_id', societyId);
-
-  return events.map((e) => e['event_name']) as List<String>;
-}
-
 Future<Map<String, dynamic>?> getSocDetails(String societyId) async {
   final Map<String, dynamic>? row = await supabase
       .from('users')

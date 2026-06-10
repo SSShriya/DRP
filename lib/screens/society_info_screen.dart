@@ -1,3 +1,5 @@
+import 'package:drp/models/event_card.dart';
+import 'package:drp/services/event_service.dart';
 import 'package:drp/services/soc_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
@@ -15,13 +17,15 @@ class SocietyInfoScreen extends StatefulWidget {
 }
 
 class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
-  final List<String> _events = [];
+  final List<EventCard> _events = [];
   String _name = '';
   String _uni = '';
   String? _about;
   String? _location;
-  String? _imageUrl;
+  String _imageUrl = '';
   bool _isLoading = false;
+
+  final EventService eventService = EventService();
 
   @override
   void initState() {
@@ -38,11 +42,12 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
     });
 
     try {
-      final names = await getEventsBySociety(widget.societyId);
+      List<EventCard> events = await eventService.getAllEvents();
+      events = events.where((e) => e.societyId == widget.societyId).toList();
       if (mounted) {
         setState(() {
           _events.clear();
-          _events.addAll(names);
+          _events.addAll(events);
         });
       }
     } catch (e) {
@@ -113,7 +118,7 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                   radius: 60,
                   fontsize: 48,
                   random: false,
-                  img: _imageUrl != null ? (_imageUrl!.isNotEmpty ? _imageUrl : null) : null,
+                  img: _imageUrl.isNotEmpty ? _imageUrl : null,
                 ),
 
                 const SizedBox(height: 10),
@@ -178,7 +183,7 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
             ),
           ),
 
-                    const SizedBox(height: 12),
+          const SizedBox(height: 12),
 
           // ── About ──
           _Card(
