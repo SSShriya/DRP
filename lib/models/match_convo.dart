@@ -19,16 +19,8 @@ class ChatConversation {
     this.isSociety = false,
   });
 
-  factory ChatConversation.fromJson(Map<String, dynamic> json) {
-    return ChatConversation(
-      matchCard: MatchCard.fromJson(json),
-      isSociety: json['event_id'] != null,
-      numMessages: json['num_messages'] ?? 0,
-    );
-  }
-
   String get name => matchCard.title;
-  String get otherUserId => matchCard.id;
+  String get otherUserId => matchCard.otherUserId;
   String get event => matchCard.eventName;
   List<String> get interests => matchCard.interests;
   String? get imageUrl => matchCard.imageUrl;

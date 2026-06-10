@@ -126,7 +126,6 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
 
   void _buildSocietyCard() {
     _societyCard = MatchCard(
-      id: widget.societyId,
       title: _name,
       university: _uni,
       course: 'N/A',
@@ -136,7 +135,9 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
       yearGroup: 'N/A',
       location: _location,
       interests: const [],
-      imageUrl: _imageUrl,
+      imageUrl: _imageUrl, 
+      currentUserId: userId, 
+      otherUserId: widget.societyId,
     );
   }
 

@@ -49,7 +49,7 @@ class MatchService {
 
     for (final row in rows as List) {
       final user1Id = row['user1_id'] as String;
-      final user2Id = row['user2_id'] as String;
+      // final user2Id = row['user2_id'] as String;
       final user1Accepted = row['user1_accepted'] as bool?;
       final user2Accepted = row['user2_accepted'] as bool?;
       final eventId = row['event_id'] as String;
@@ -111,7 +111,9 @@ class MatchService {
 
       matches.add((
         MatchCard(
-          id: '$user1Id|$user2Id|$eventId',
+          // id: '$user1Id|$user2Id|$eventId',
+          currentUserId: currentUserId,
+          otherUserId: otherUserData['id'] as String,
           title: otherUserData['name'] ?? 'Unknown',
           university: otherUniversity,
           course: otherCourse,
@@ -134,10 +136,8 @@ class MatchService {
   }
 
   // check if other user has accepted your match
-  Future<bool> hasOtherUserAccepted(String matchId) async {
-    final currentUserId = await loadUserId();
-
-    final parts = matchId.split('|');
+  Future<bool> hasOtherUserAccepted(MatchCard card) async {
+    final parts = card.matchKey.split('|');
     final user1Id = parts[0];
     final user2Id = parts[1];
     final eventId = parts[2];
@@ -150,7 +150,7 @@ class MatchService {
         .eq('event_id', eventId)
         .single();
 
-    final otherAccepted = currentUserId == user1Id
+    final otherAccepted = card.currentUserId == card.matchKey.split('|')[0]
         ? row['user2_accepted'] as bool?
         : row['user1_accepted'] as bool?;
 
@@ -172,7 +172,7 @@ class MatchService {
 
     for (final row in rows as List) {
       final user1Id = row['user1_id'] as String;
-      final user2Id = row['user2_id'] as String;
+      // final user2Id = row['user2_id'] as String;
       final user1Accepted = row['user1_accepted'] as bool?;
       final user2Accepted = row['user2_accepted'] as bool?;
       final eventId = row['event_id'] as String;
@@ -193,7 +193,9 @@ class MatchService {
 
       waiting.add(
         MatchCard(
-          id: '$user1Id|$user2Id|$eventId',
+          // id: '$user1Id|$user2Id|$eventId',
+          currentUserId: currentUserId,
+          otherUserId: otherUserData['id'] as String,
           title: otherUserData['name'] ?? 'Unknown',
           university: otherUserData['university'] ?? '',
           course: otherUserData['course'] ?? '',
@@ -213,15 +215,13 @@ class MatchService {
     return waiting;
   }
 
-  Future<void> recordDecision(String matchId, bool accepted) async {
-    final currentUserId = await loadUserId();
-
-    final parts = matchId.split('|');
+  Future<void> recordDecision(MatchCard card, bool accepted) async {
+    final parts = card.matchKey.split('|');
     final user1Id = parts[0];
     final user2Id = parts[1];
     final eventId = parts[2];
 
-    final isUser1 = currentUserId == user1Id;
+    final isUser1 = card.currentUserId == user1Id;
 
     await supabase
         .from('matches')
@@ -236,25 +236,37 @@ class MatchService {
         .eq('event_id', eventId);
   }
 
-  Future<void> blockUser(String otherUserId) async {
-    final currentUserId = await loadUserId();
+  Future<void> reportUser(MatchCard card, String description) async {
+    // final currentUserId = await loadUserId();
+
+    try {
+      await supabase.from('reported').insert({
+        'reportee_userid': card.otherUserId,
+        'reporter_userid': card.currentUserId,
+        'description': description,
+      });
+    } catch (e) {
+      throw Exception('Failed to report user: $e, please try again later.');
+    }
+  }
+
+  Future<void> blockUser(MatchCard card) async {
+    // final currentUserId = await loadUserId();
 
     // insert into blocked table
     await supabase.from('blocked').upsert({
-      'user1_id': currentUserId,
-      'user2_id': otherUserId,
+      'user1_id': card.currentUserId,
+      'user2_id': card.otherUserId,
     });
 
-    // delete matches in both possible ID orderings
-    final a = currentUserId.compareTo(otherUserId) <= 0
-        ? currentUserId
-        : otherUserId;
-    final b = currentUserId.compareTo(otherUserId) <= 0
-        ? otherUserId
-        : currentUserId;
+    final parts = card.matchKey.split('|');
 
     // also delete all matches between these two users
-    await supabase.from('matches').delete().eq('user1_id', a).eq('user2_id', b);
+    await supabase
+        .from('matches')
+        .delete()
+        .eq('user1_id', parts[0])
+        .eq('user2_id', parts[1]);
   }
 
   // for getting confirmed matches for an event
@@ -338,7 +350,9 @@ class MatchService {
     final otherUser = user1Data['id'] == currentUserId ? user2Data : user1Data;
 
     return MatchCard(
-      id: otherUser['id'],
+      // id: otherUser['id'],
+      currentUserId: currentUserId,
+      otherUserId: otherUser['id'] as String,
       title: otherUser['name'] ?? 'Unknown',
       university: otherUser['university'] ?? '',
       course: otherUser['course'] ?? '',
