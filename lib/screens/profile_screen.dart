@@ -27,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _courseController = TextEditingController();
   final _bioController = TextEditingController();
   final _interestInputController = TextEditingController();
+  final List<String> _existingGalleryUrls = [];
 
   String? _selectedUniversity;
   String? _selectedBorough;
@@ -37,6 +38,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _existingAvatarUrl;
   final List<String> _interests = [];
   bool _isLoading = false;
+
+  // ── Photo Gallery ────────────────────────────────────────────────────────
+  static const int _maxGalleryPhotos = 5;
+  final List<Uint8List> _galleryBytes = [];
+  final List<XFile> _galleryFiles = [];
 
   static const int _maxInterests = 10;
 
@@ -59,6 +65,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .eq('id', userId)
           .maybeSingle();
 
+      final galleryData = await supabase
+          .from('user_gallery')
+          .select('photo_url')
+          .eq('user_id', userId)
+          .order('position', ascending: true);
+
       final interestsData = await supabase
           .from('user_interests')
           .select('interest')
@@ -70,19 +82,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _courseController.text = userdata['course'] ?? '';
           _bioController.text = userdata['bio'] ?? '';
 
-          // University — only accept known values
           final savedUniversity = userdata['university'] as String?;
           _selectedUniversity = londonUniversities.contains(savedUniversity)
               ? savedUniversity
               : null;
 
-          // Borough — only accept known values
           final savedLocation = userdata['location'] as String?;
           _selectedBorough = londonBoroughs.contains(savedLocation)
               ? savedLocation
               : null;
 
-          // Year group — only accept known values
           final savedYear = userdata['year_group'] as String?;
           _selectedYearGroup = yearGroups.contains(savedYear)
               ? savedYear
@@ -93,6 +102,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _interests.clear();
           _interests.addAll(
             (interestsData as List).map((e) => e['interest'] as String),
+          );
+
+          _existingGalleryUrls.clear();
+          _existingGalleryUrls.addAll(
+            (galleryData as List).map((e) => e['photo_url'] as String),
           );
         });
       }
@@ -121,12 +135,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (picked != null) {
       final bytes = await picked.readAsBytes();
-
       setState(() {
         _imageFile = picked;
         _imageBytes = bytes;
       });
     }
+  }
+
+  // ── Gallery Photo Picker ─────────────────────────────────────────────────
+  Future<void> _pickGalleryPhoto() async {
+    if (_galleryFiles.length >= _maxGalleryPhotos) {
+      _showError('You can only upload up to $_maxGalleryPhotos photos.');
+      return;
+    }
+
+    final XFile? picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _galleryFiles.add(picked);
+        _galleryBytes.add(bytes);
+      });
+    }
+  }
+
+  void _removeGalleryPhoto(int index) {
+    setState(() {
+      _galleryFiles.removeAt(index);
+      _galleryBytes.removeAt(index);
+    });
   }
 
   Future<void> _saveProfile() async {
@@ -146,10 +186,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // ── Profile picture ──────────────────────────────────────────────
       if (_imageFile != null) {
         await uploadProfilePicture(_imageFile!, userId);
       }
 
+      // ── Gallery photos ───────────────────────────────────────────────
+      // 1. Upload any newly picked photos and get their URLs
+      final List<String> newUrls = _galleryFiles.isNotEmpty
+          ? await uploadGalleryPhotos(_galleryFiles, userId)
+          : [];
+
+      // 2. Merge kept existing URLs + newly uploaded URLs (preserves order)
+      final List<String> allUrls = [..._existingGalleryUrls, ...newUrls];
+
+      // 3. Sync the full gallery to the database
+      await saveGalleryUrls(userId, allUrls);
+
+      // ── Profile details ──────────────────────────────────────────────
       await updateDetails(
         userId,
         _nameController.text.trim(),
@@ -219,8 +273,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) Navigator.pushReplacementNamed(context, '/signup');
   }
 
-  // ── Shared Autocomplete builder ───────────────────────────────────────────
-  // Reusable so borough and university stay visually identical
   Widget _buildAutocompleteField({
     required String initialValue,
     required List<String> options,
@@ -314,7 +366,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── University Field ──────────────────────────────────────────────────────
   Widget _buildUniversityField() {
     return _buildAutocompleteField(
       key: const ValueKey('university'),
@@ -331,7 +382,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── Borough Field ─────────────────────────────────────────────────────────
   Widget _buildBoroughField() {
     return _buildAutocompleteField(
       key: const ValueKey('borough'),
@@ -345,7 +395,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── Year Group Dropdown ───────────────────────────────────────────────────
   Widget _buildYearGroupField() {
     return DropdownButtonFormField<String>(
       initialValue: _selectedYearGroup,
@@ -395,6 +444,202 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildPhotoGallery() {
+    final int totalPhotos = _existingGalleryUrls.length + _galleryBytes.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Header ────────────────────────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Photo Gallery',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            Text(
+              '$totalPhotos/$_maxGalleryPhotos',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Upload some photos that represent yourself!',
+          style: TextStyle(fontSize: 13, color: Colors.grey),
+        ),
+        const SizedBox(height: 12),
+
+        // ── Photo Grid ────────────────────────────────────────────────────
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            // ── Existing saved photos (from Supabase) ──────────────────
+            ..._existingGalleryUrls.asMap().entries.map((entry) {
+              final index = entry.key;
+              final url = entry.value;
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      url,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF84DCC6),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Remove button
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () =>
+                          setState(() => _existingGalleryUrls.removeAt(index)),
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+
+            // ── Newly picked photos (not yet saved) ────────────────────
+            ..._galleryBytes.asMap().entries.map((entry) {
+              final index = entry.key;
+              final bytes = entry.value;
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      bytes,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // Remove button
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => _removeGalleryPhoto(index),
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // ── "Unsaved" badge ──────────────────────────────────
+                  Positioned(
+                    bottom: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'New',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+
+            // ── Add photo button (only if under limit) ─────────────────
+            if (totalPhotos < _maxGalleryPhotos)
+              GestureDetector(
+                onTap: _pickGalleryPhoto,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 30,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Add Photo',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -426,47 +671,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Center(
                         child: GestureDetector(
                           onTap: _pickImage,
-                          child: Stack(
+                          child: Column(
                             children: [
-                              CircleAvatar(
-                                radius: 60,
-                                backgroundColor: Colors.grey.shade200,
-                                backgroundImage: _imageBytes != null
-                                    ? MemoryImage(_imageBytes!) as ImageProvider
-                                    : _existingAvatarUrl != null
-                                    ? NetworkImage(_existingAvatarUrl!)
-                                    : null,
-                                child:
-                                    (_imageBytes == null &&
-                                        _existingAvatarUrl == null)
-                                    ? Icon(
-                                        Icons.camera_alt_outlined,
-                                        size: 40,
-                                        color: Colors.grey.shade600,
-                                      )
-                                    : null,
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 4,
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0XFF84DCC6),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.edit,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
+                              const Text(
+                                'Profile Picture',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
                                 ),
+                              ),
+
+                              SizedBox(height: 4),
+                              const Text(
+                                'Upload a picture, preferably with you in it!',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
+                              ),
+
+                              SizedBox(height: 8),
+                              Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 60,
+                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundImage: _imageBytes != null
+                                        ? MemoryImage(_imageBytes!)
+                                              as ImageProvider
+                                        : _existingAvatarUrl != null
+                                        ? NetworkImage(_existingAvatarUrl!)
+                                        : null,
+                                    child:
+                                        (_imageBytes == null &&
+                                            _existingAvatarUrl == null)
+                                        ? Icon(
+                                            Icons.camera_alt_outlined,
+                                            size: 40,
+                                            color: Colors.grey.shade600,
+                                          )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0XFF84DCC6),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.edit,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 32),
+
+                      const Text(
+                        'Your Information',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+
+                      SizedBox(height: 16),
 
                       // ── Name ─────────────────────────────────────────────
                       _buildTextField(
@@ -499,7 +779,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildBoroughField(),
                         const SizedBox(height: 16),
 
-                        // ── Interests ────────────────────────────────────────────────────
+                        // ── Interests ────────────────────────────────────────
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -598,7 +878,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 16),
                       ],
 
-                      // ── Bio ──────────────────────────────────────────────────────────
+                      // ── Photo Gallery ─────────────────────────────────────
+                      _buildPhotoGallery(),
+                      const SizedBox(height: 24),
+
+                      // ── Bio ──────────────────────────────────────────────
                       const Text(
                         'Bio',
                         style: TextStyle(
