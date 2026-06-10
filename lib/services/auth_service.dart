@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'session_manager.dart';
 import 'supabase_client.dart';
 
@@ -8,9 +9,18 @@ class AuthService {
     required String name,
     required bool isSociety,
   }) async {
+    // ── Use web URL for web, deep link for mobile ──────────────────
+    final redirectTo = kIsWeb
+        ? Uri
+              .base
+              .origin // ← automatically uses whatever port Flutter is running on
+        : 'drp://login-callback';
+
     final response = await supabase.auth.signUp(
       email: email,
       password: password,
+      emailRedirectTo: redirectTo,
+      data: {'name': name, 'is_society': isSociety},
     );
 
     final user = response.user;
@@ -18,16 +28,6 @@ class AuthService {
     if (user == null) {
       throw Exception('Sign up failed. Please try again.');
     }
-
-    // ── Insert the user row immediately using the user id ──────────────
-    await supabase.from('users').insert({
-      'id': user.id,
-      'name': name,
-      'university': '',
-      'course': '',
-      'bio': '',
-      'is_society': isSociety,
-    });
   }
 
   Future<void> signIn({required String email, required String password}) async {

@@ -1,13 +1,15 @@
+import 'package:app_links/app_links.dart';
 import 'package:drp/screens/main_shell.dart';
 import 'package:drp/screens/profile_screen.dart';
 import 'package:drp/screens/society_screen.dart';
+import 'package:drp/screens/verify_email_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/signup_screen.dart';
 import 'services/supabase_client.dart';
-import 'screens/verify_email_screen.dart';
+import 'package:flutter/foundation.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -33,6 +35,43 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   Future<_UserRouteInfo>? _routeFuture;
   String? _lastUserId;
+  late final AppLinks _appLinks;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      _handleWebAuthCallback();
+    } else {
+      _handleIncomingLinks();
+    }
+  }
+
+  Future<void> _handleWebAuthCallback() async {
+    // Supabase Flutter web SDK automatically reads the token from
+    // the URL fragment — we just need to wait for it to process
+    final uri = Uri.base;
+
+    if (uri.fragment.contains('access_token')) {
+      try {
+        await supabase.auth.getSessionFromUrl(uri);
+      } catch (e) {
+        debugPrint('Error getting session from URL: $e');
+      }
+    }
+  }
+
+  void _handleIncomingLinks() {
+    _appLinks = AppLinks();
+
+    _appLinks.uriLinkStream.listen((uri) async {
+      if (uri.scheme == 'drp') {
+        // Let Supabase handle the deep link — it will extract the tokens
+        // and fire onAuthStateChange automatically
+        await supabase.auth.getSessionFromUrl(uri);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +80,7 @@ class _MainAppState extends State<MainApp> {
       home: StreamBuilder<AuthState>(
         stream: supabase.auth.onAuthStateChange,
         builder: (context, snapshot) {
+          // ── Still waiting for first event ───────────────────────────
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
@@ -48,16 +88,20 @@ class _MainAppState extends State<MainApp> {
           }
 
           final session = snapshot.data?.session;
-          // ── Read user from the event, falling back to currentUser ──────
           final user =
               snapshot.data?.session?.user ?? supabase.auth.currentUser;
 
-          // ── User exists but email not verified ──────────────────────────
+          print('🔐 Auth state: event=${snapshot.data?.event}');
+          print('🔐 User: ${user?.email}');
+          print('🔐 Email confirmed: ${user?.emailConfirmedAt}');
+          print('🔐 Session: $session');
+
+          // ── User exists but email not verified ──────────────────────
           if (user != null && user.emailConfirmedAt == null) {
             return VerifyEmailScreen(email: user.email ?? '');
           }
 
-          // ── No user at all → sign up/login screen ───────────────────────
+          // ── No user at all → sign up/login screen ───────────────────
           if (user == null || session == null) return const SignUpScreen();
 
           // Only re-fetch if the user changed
@@ -94,7 +138,6 @@ class _MainAppState extends State<MainApp> {
   }
 }
 
-// Holds everything the StreamBuilder needs to make a routing decision
 class _UserRouteInfo {
   final bool isSociety;
   final bool hasCompletedProfile;
@@ -123,7 +166,9 @@ Future<_UserRouteInfo> _getUserRouteInfo(String userId) async {
         );
       }
     } catch (_) {}
-    if (attempt < 2) await Future.delayed(const Duration(milliseconds: 500));
+    if (attempt < 2) {
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
   }
   return const _UserRouteInfo(isSociety: false, hasCompletedProfile: false);
 }
