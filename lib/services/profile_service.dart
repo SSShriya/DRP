@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_client.dart';
 import 'package:image/image.dart' as img;
-import 'package:mime/mime.dart';
 import 'dart:typed_data';
 
 /// Uploads a profile picture and updates the user's avatar_url in the DB.
@@ -12,9 +11,6 @@ Future<void> uploadProfilePicture(XFile imageFile, String userId) async {
 
   try {
     final bytes = await imageFile.readAsBytes();
-
-    // // detect og mime type
-    // final mimeType = lookupMimeType('', headerBytes: bytes);
 
     Uint8List finalBytes;
     String contentType = 'image/jpeg';
