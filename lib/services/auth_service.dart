@@ -1,21 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'session_manager.dart';
 import 'supabase_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AuthService {
-  Future<void> signUp({
-    required String email,
-    required String password,
-    required String name,
-    required bool isSociety,
-  }) async {
-    // ── Use web URL for web, deep link for mobile ──────────────────
-    final redirectTo = kIsWeb
-        ? Uri
-              .base
-              .origin // ← automatically uses whatever port Flutter is running on
-        : 'drp://login-callback';
+Future<void> signUp({
+  required String email,
+  required String password,
+  required String name,
+  required bool isSociety,
+}) async {
+  final redirectTo = kIsWeb ? Uri.base.origin : 'drp://login-callback';
 
+  try {
     final response = await supabase.auth.signUp(
       email: email,
       password: password,
@@ -27,6 +23,60 @@ class AuthService {
 
     if (user == null) {
       throw Exception('Sign up failed. Please try again.');
+    }
+
+    // Supabase returns a fake user with no identities if the email
+    // already exists — check for this specifically
+    if (user.identities != null && user.identities!.isEmpty) {
+      throw Exception('An account with this email already exists.');
+    }
+  } on AuthException catch (e) {
+    // Re-map Supabase auth error messages to friendlier ones
+    if (e.message.toLowerCase().contains('already registered') ||
+        e.message.toLowerCase().contains('already exists') ||
+        e.message.toLowerCase().contains('email address is already')) {
+      throw Exception('An account with this email already exists.');
+    }
+    rethrow;
+  }
+}
+
+class AuthService {
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required String name,
+    required bool isSociety,
+  }) async {
+    final redirectTo = kIsWeb ? Uri.base.origin : 'drp://login-callback';
+
+    try {
+      final response = await supabase.auth.signUp(
+        email: email,
+        password: password,
+        emailRedirectTo: redirectTo,
+        data: {'name': name, 'is_society': isSociety},
+      );
+
+      final user = response.user;
+
+      if (user == null) {
+        throw Exception('Sign up failed. Please try again.');
+      }
+
+      // Supabase returns a fake user with no identities if the email
+      // already exists — check for this specifically
+      if (user.identities != null && user.identities!.isEmpty) {
+        throw Exception('An account with this email already exists.');
+      }
+    } on AuthException catch (e) {
+      // Re-map Supabase auth error messages to friendlier ones
+      if (e.message.toLowerCase().contains('already registered') ||
+          e.message.toLowerCase().contains('already exists') ||
+          e.message.toLowerCase().contains('email address is already')) {
+        throw Exception('An account with this email already exists.');
+      }
+      rethrow;
     }
   }
 

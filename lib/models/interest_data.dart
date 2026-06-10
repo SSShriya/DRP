@@ -132,6 +132,8 @@ const List<InterestCategory> interestCategories = [
       'Self-Help',
       'History',
       'Philosophy',
+      'Reading',
+      'Writing',
     ],
   ),
   InterestCategory(
