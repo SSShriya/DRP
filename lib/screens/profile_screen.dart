@@ -27,7 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _courseController = TextEditingController();
   final _bioController = TextEditingController();
   final _interestInputController = TextEditingController();
-  final List<String> _existingGalleryUrls = [];
 
   String? _selectedUniversity;
   String? _selectedBorough;
@@ -36,15 +35,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   XFile? _imageFile;
   Uint8List? _imageBytes;
   String? _existingAvatarUrl;
-  final List<String> _interests = [];
   bool _isLoading = false;
 
-  // ── Photo Gallery ────────────────────────────────────────────────────────
-  static const int _maxGalleryPhotos = 5;
-  final List<Uint8List> _galleryBytes = [];
-  final List<XFile> _galleryFiles = [];
-
   static const int _maxInterests = 10;
+
+  // ── Interests with optional photo ────────────────────────────────────────
+  // Key: interest name (lowercase)
+  // Value: {'url': String?, 'bytes': Uint8List?, 'file': XFile?}
+  //   - url   → already saved in Supabase
+  //   - bytes → newly picked, not yet saved
+  //   - file  → newly picked file (needed for upload)
+  final Map<String, Map<String, dynamic>> _interestData = {};
+
+  // Ordered list of interest names (preserves display order)
+  final List<String> _interests = [];
 
   @override
   void initState() {
@@ -54,7 +58,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadExistingProfile() async {
     setState(() => _isLoading = true);
-
     try {
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) return;
@@ -65,15 +68,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .eq('id', userId)
           .maybeSingle();
 
-      final galleryData = await supabase
-          .from('user_gallery')
-          .select('photo_url')
-          .eq('user_id', userId)
-          .order('position', ascending: true);
-
+      // Now also fetches photo_url per interest
       final interestsData = await supabase
           .from('user_interests')
-          .select('interest')
+          .select('interest, photo_url')
           .eq('user_id', userId);
 
       if (userdata != null) {
@@ -100,14 +98,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _existingAvatarUrl = userdata['avatar_url'];
 
           _interests.clear();
-          _interests.addAll(
-            (interestsData as List).map((e) => e['interest'] as String),
-          );
+          _interestData.clear();
 
-          _existingGalleryUrls.clear();
-          _existingGalleryUrls.addAll(
-            (galleryData as List).map((e) => e['photo_url'] as String),
-          );
+          for (final row in interestsData as List) {
+            final name = row['interest'] as String;
+            final url = row['photo_url'] as String?;
+            _interests.add(name);
+            _interestData[name] = {
+              'url': url, // existing saved photo (nullable)
+              'bytes': null, // no new photo yet
+              'file': null,
+            };
+          }
         });
       }
     } on PostgrestException catch (e) {
@@ -132,7 +134,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final XFile? picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
-
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       setState(() {
@@ -142,30 +143,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ── Gallery Photo Picker ─────────────────────────────────────────────────
-  Future<void> _pickGalleryPhoto() async {
-    if (_galleryFiles.length >= _maxGalleryPhotos) {
-      _showError('You can only upload up to $_maxGalleryPhotos photos.');
-      return;
-    }
-
+  // ── Pick a photo for a specific interest ─────────────────────────────────
+  Future<void> _pickInterestPhoto(String interest) async {
     final XFile? picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
-
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       setState(() {
-        _galleryFiles.add(picked);
-        _galleryBytes.add(bytes);
+        _interestData[interest] = {
+          ..._interestData[interest]!,
+          'bytes': bytes,
+          'file': picked,
+        };
       });
     }
   }
 
-  void _removeGalleryPhoto(int index) {
+  // ── Remove a photo from an interest (clears both saved + new) ────────────
+  void _removeInterestPhoto(String interest) {
     setState(() {
-      _galleryFiles.removeAt(index);
-      _galleryBytes.removeAt(index);
+      _interestData[interest] = {
+        ..._interestData[interest]!,
+        'url': null,
+        'bytes': null,
+        'file': null,
+      };
     });
   }
 
@@ -177,7 +180,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _showError('User session not found. Please log in again.');
       return;
     }
-
     if (_selectedUniversity == null) {
       _showError('Please select your university.');
       return;
@@ -191,19 +193,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await uploadProfilePicture(_imageFile!, userId);
       }
 
-      // ── Gallery photos ───────────────────────────────────────────────
-      // 1. Upload any newly picked photos and get their URLs
-      final List<String> newUrls = _galleryFiles.isNotEmpty
-          ? await uploadGalleryPhotos(_galleryFiles, userId)
-          : [];
+      // ── Upload any new interest photos & build final url map ─────────
+      // Map<interestName, finalPhotoUrl (nullable)>
+      final Map<String, String?> finalPhotoUrls = {};
 
-      // 2. Merge kept existing URLs + newly uploaded URLs (preserves order)
-      final List<String> allUrls = [..._existingGalleryUrls, ...newUrls];
+      for (final interest in _interests) {
+        final data = _interestData[interest]!;
+        final XFile? newFile = data['file'] as XFile?;
+        final String? existingUrl = data['url'] as String?;
 
-      // 3. Sync the full gallery to the database
-      await saveGalleryUrls(userId, allUrls);
+        if (newFile != null) {
+          // Upload new photo and use its URL
+          final urls = await uploadGalleryPhotos([newFile], userId);
+          finalPhotoUrls[interest] = urls.isNotEmpty ? urls.first : existingUrl;
+        } else {
+          // Keep existing URL (or null if they removed it)
+          finalPhotoUrls[interest] = existingUrl;
+        }
+      }
 
-      // ── Profile details ──────────────────────────────────────────────
+      // ── Save interests + photo URLs in one go ────────────────────────
       await updateDetails(
         userId,
         _nameController.text.trim(),
@@ -212,8 +221,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _bioController.text.trim(),
         widget.isSociety ? '' : (_selectedYearGroup ?? ''),
         widget.isSociety ? '' : (_selectedBorough ?? ''),
+        // Pass interests as before — updateDetails handles the upsert
         widget.isSociety ? [] : _interests,
       );
+
+      // ── Update photo_url per interest row ────────────────────────────
+      if (!widget.isSociety) {
+        for (final interest in _interests) {
+          await supabase
+              .from('user_interests')
+              .update({'photo_url': finalPhotoUrls[interest]})
+              .eq('user_id', userId)
+              .eq('interest', interest);
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -269,8 +290,277 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     await supabase.auth.signOut();
     await SessionManager.clearSession();
-
     if (mounted) Navigator.pushReplacementNamed(context, '/signup');
+  }
+
+  // ── Interest Photo Gallery Section ───────────────────────────────────────
+  Widget _buildPhotoGallery() {
+    if (_interests.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Interest Photos',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Tap an interest to add an optional photo!',
+          style: TextStyle(fontSize: 13, color: Colors.grey),
+        ),
+        const SizedBox(height: 12),
+
+        // ── Horizontal scrollable chip row ───────────────────────────────
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _interests.map((interest) {
+              final data = _interestData[interest]!;
+              final bool hasPhoto =
+                  data['bytes'] != null || data['url'] != null;
+              final displayName =
+                  interest[0].toUpperCase() + interest.substring(1);
+
+              return GestureDetector(
+                onTap: () => _openInterestPhotoSheet(interest),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    // Highlight if a photo has been added
+                    color: hasPhoto
+                        ? const Color(0xFF84DCC6).withOpacity(0.15)
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: hasPhoto
+                          ? const Color(0xFF84DCC6)
+                          : Colors.grey.shade300,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        hasPhoto
+                            ? Icons.check_circle_outline
+                            : Icons.add_photo_alternate_outlined,
+                        size: 16,
+                        color: hasPhoto
+                            ? const Color(0xFF84DCC6)
+                            : Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        displayName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: hasPhoto
+                              ? const Color(0xFF84DCC6)
+                              : Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openInterestPhotoSheet(String interest) async {
+    final displayName = interest[0].toUpperCase() + interest.substring(1);
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        // StatefulBuilder so the sheet can rebuild on photo pick/remove
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final data = _interestData[interest]!;
+            final Uint8List? newBytes = data['bytes'] as Uint8List?;
+            final String? savedUrl = data['url'] as String?;
+            final bool hasPhoto = newBytes != null || savedUrl != null;
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Handle bar ─────────────────────────────────────────
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // ── Title ──────────────────────────────────────────────
+                  Text(
+                    displayName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Add a photo that represents this interest.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ── Photo preview or empty state ───────────────────────
+                  if (hasPhoto)
+                    Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: newBytes != null
+                              ? Image.memory(
+                                  newBytes,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  savedUrl!,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      height: 200,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Color(0xFF84DCC6),
+                                              ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                        // Remove button
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () {
+                              _removeInterestPhoto(interest);
+                              // Also update the sheet's local state
+                              setSheetState(() {});
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Colors.redAccent,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    // ── Empty placeholder ────────────────────────────────
+                    Container(
+                      height: 160,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 40,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No photo yet',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Action button ──────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        // Pick photo, then rebuild both sheet + parent
+                        await _pickInterestPhoto(interest);
+                        setSheetState(() {});
+                      },
+                      icon: const Icon(Icons.photo_library_outlined, size: 18),
+                      label: Text(hasPhoto ? 'Change Photo' : 'Choose Photo'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF84DCC6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildAutocompleteField({
@@ -444,202 +734,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPhotoGallery() {
-    final int totalPhotos = _existingGalleryUrls.length + _galleryBytes.length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Header ────────────────────────────────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Photo Gallery',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            Text(
-              '$totalPhotos/$_maxGalleryPhotos',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Upload some photos that represent yourself!',
-          style: TextStyle(fontSize: 13, color: Colors.grey),
-        ),
-        const SizedBox(height: 12),
-
-        // ── Photo Grid ────────────────────────────────────────────────────
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            // ── Existing saved photos (from Supabase) ──────────────────
-            ..._existingGalleryUrls.asMap().entries.map((entry) {
-              final index = entry.key;
-              final url = entry.value;
-              return Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      url,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF84DCC6),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  // Remove button
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: () =>
-                          setState(() => _existingGalleryUrls.removeAt(index)),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.redAccent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-
-            // ── Newly picked photos (not yet saved) ────────────────────
-            ..._galleryBytes.asMap().entries.map((entry) {
-              final index = entry.key;
-              final bytes = entry.value;
-              return Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.memory(
-                      bytes,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  // Remove button
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: () => _removeGalleryPhoto(index),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.redAccent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // ── "Unsaved" badge ──────────────────────────────────
-                  Positioned(
-                    bottom: 4,
-                    left: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'New',
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-
-            // ── Add photo button (only if under limit) ─────────────────
-            if (totalPhotos < _maxGalleryPhotos)
-              GestureDetector(
-                onTap: _pickGalleryPhoto,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300, width: 1.5),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_photo_alternate_outlined,
-                        size: 30,
-                        color: Colors.grey.shade500,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Add Photo',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -667,7 +761,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── Profile Picture ──────────────────────────────────
+                      // ── Profile Picture ────────────────────────────────
                       Center(
                         child: GestureDetector(
                           onTap: _pickImage,
@@ -681,8 +775,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: Colors.black87,
                                 ),
                               ),
-
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               const Text(
                                 'Upload a picture, preferably with you in it!',
                                 style: TextStyle(
@@ -690,8 +783,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: Colors.grey,
                                 ),
                               ),
-
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Stack(
                                 children: [
                                   CircleAvatar(
@@ -745,10 +837,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           color: Colors.black87,
                         ),
                       ),
+                      const SizedBox(height: 16),
 
-                      SizedBox(height: 16),
-
-                      // ── Name ─────────────────────────────────────────────
                       _buildTextField(
                         controller: _nameController,
                         label: 'Full Name',
@@ -757,12 +847,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // ── University Autocomplete ──────────────────────────
                       _buildUniversityField(),
                       const SizedBox(height: 16),
 
                       if (!widget.isSociety) ...[
-                        // ── Course ───────────────────────────────────────────
                         _buildTextField(
                           controller: _courseController,
                           label: 'Course / Major',
@@ -771,15 +859,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // ── Year Group ───────────────────────────────────────
                         _buildYearGroupField(),
                         const SizedBox(height: 16),
 
-                        // ── Borough ──────────────────────────────────────────
                         _buildBoroughField(),
                         const SizedBox(height: 16),
 
-                        // ── Interests ────────────────────────────────────────
+                        // ── Interests ──────────────────────────────────
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -836,7 +922,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     const SizedBox(width: 6),
                                     Text(
                                       category.name,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                         color: Colors.black87,
@@ -869,20 +955,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   size: 18,
                                   color: Colors.grey,
                                 ),
-                                onDeleted: () =>
-                                    setState(() => _interests.remove(interest)),
+                                onDeleted: () => setState(() {
+                                  _interests.remove(interest);
+                                  _interestData.remove(interest);
+                                }),
                               );
                             }).toList(),
                           ),
+                          const SizedBox(height: 16),
+
+                          // ── Interest Photos ────────────────────────────
+                          _buildPhotoGallery(),
+                          const SizedBox(height: 8),
                         ],
                         const SizedBox(height: 16),
                       ],
 
-                      // ── Photo Gallery ─────────────────────────────────────
-                      _buildPhotoGallery(),
-                      const SizedBox(height: 24),
-
-                      // ── Bio ──────────────────────────────────────────────
+                      // ── Bio ───────────────────────────────────────────
                       const Text(
                         'Bio',
                         style: TextStyle(
@@ -912,7 +1001,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // ── Save Button ──────────────────────────────────────
                       ElevatedButton(
                         onPressed: _isLoading ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
@@ -935,7 +1023,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // ── Logout Button ────────────────────────────────────
                       ElevatedButton(
                         onPressed: _isLoading ? null : _logout,
                         style: ElevatedButton.styleFrom(
@@ -999,8 +1086,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() {
             if (_interests.contains(normalised)) {
               _interests.remove(normalised);
+              _interestData.remove(normalised);
             } else if (_interests.length < _maxInterests) {
               _interests.add(normalised);
+              // Initialise with no photo
+              _interestData[normalised] = {
+                'url': null,
+                'bytes': null,
+                'file': null,
+              };
             } else {
               _showError('Maximum of $_maxInterests interests reached.');
             }
@@ -1018,7 +1112,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           try {
             await suggestInterest(interest: text, category: category.name);
           } catch (_) {}
-          setState(() => _interests.add(text));
+          setState(() {
+            _interests.add(text);
+            _interestData[text] = {'url': null, 'bytes': null, 'file': null};
+          });
         },
       ),
     );
