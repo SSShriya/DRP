@@ -1,12 +1,15 @@
+import 'package:app_links/app_links.dart';
 import 'package:drp/screens/main_shell.dart';
 import 'package:drp/screens/profile_screen.dart';
 import 'package:drp/screens/society_screen.dart';
+import 'package:drp/screens/verify_email_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/signup_screen.dart';
 import 'services/supabase_client.dart';
+import 'package:flutter/foundation.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -32,6 +35,57 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   Future<_UserRouteInfo>? _routeFuture;
   String? _lastUserId;
+  late final AppLinks _appLinks;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      _handleWebAuthCallback();
+    } else {
+      _handleIncomingLinks();
+    }
+  }
+
+  Future<void> _handleWebAuthCallback() async {
+    // Supabase Flutter web SDK automatically reads the token from
+    // the URL fragment — we just need to wait for it to process
+    final uri = Uri.base;
+
+    if (uri.fragment.contains('access_token')) {
+      try {
+        await supabase.auth.getSessionFromUrl(uri);
+      } catch (e) {
+        debugPrint('Error getting session from URL: $e');
+      }
+    }
+  }
+
+  void _handleIncomingLinks() {
+    _appLinks = AppLinks();
+
+    // ── Handle link when app is launched fresh from the link ──────────
+    _appLinks.getInitialLink().then((uri) async {
+      if (uri != null && uri.scheme == 'drp') {
+        try {
+          await supabase.auth.getSessionFromUrl(uri);
+        } catch (e) {
+          debugPrint('❌ Error getting session from initial link: $e');
+        }
+      }
+    });
+
+    // ── Handle link when app is already open in background ────────────
+    _appLinks.uriLinkStream.listen((uri) async {
+      if (uri.scheme == 'drp') {
+        try {
+          await supabase.auth.getSessionFromUrl(uri);
+        } catch (e) {
+          debugPrint('❌ Error getting session from link: $e');
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +94,7 @@ class _MainAppState extends State<MainApp> {
       home: StreamBuilder<AuthState>(
         stream: supabase.auth.onAuthStateChange,
         builder: (context, snapshot) {
+          // ── Still waiting for first event ───────────────────────────
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
@@ -47,12 +102,21 @@ class _MainAppState extends State<MainApp> {
           }
 
           final session = snapshot.data?.session;
-          if (session == null) return const SignUpScreen();
+          final user =
+              snapshot.data?.session?.user ?? supabase.auth.currentUser;
 
-          // Only re-fetch if the user actually changed
-          if (_lastUserId != session.user.id) {
-            _lastUserId = session.user.id;
-            _routeFuture = _getUserRouteInfo(session.user.id);
+          // // ── User exists but email not verified ──────────────────────
+          // if (user != null && user.emailConfirmedAt == null) {
+          //   return VerifyEmailScreen(email: user.email ?? '');
+          // }
+
+          // ── No user at all → sign up/login screen ───────────────────
+          if (user == null || session == null) return const SignUpScreen();
+
+          // Only re-fetch if the user changed
+          if (_lastUserId != user.id) {
+            _lastUserId = user.id;
+            _routeFuture = _getUserRouteInfo(user.id);
           }
 
           return FutureBuilder<_UserRouteInfo>(
@@ -66,12 +130,10 @@ class _MainAppState extends State<MainApp> {
 
               final info = snap.data;
 
-              // Profile incomplete → always go to profile setup first
               if (info == null || !info.hasCompletedProfile) {
                 return const ProfileScreen();
               }
 
-              // Profile complete → route by account type
               return info.isSociety ? const SocietyScreen() : const MainShell();
             },
           );
@@ -85,7 +147,6 @@ class _MainAppState extends State<MainApp> {
   }
 }
 
-// Holds everything the StreamBuilder needs to make a routing decision
 class _UserRouteInfo {
   final bool isSociety;
   final bool hasCompletedProfile;
@@ -109,14 +170,14 @@ Future<_UserRouteInfo> _getUserRouteInfo(String userId) async {
         final university = result['university'] as String?;
         return _UserRouteInfo(
           isSociety: result['is_society'] == true,
-          // University can only be set from ProfileScreen — safe completion check
           hasCompletedProfile:
               university != null && university.trim().isNotEmpty,
         );
       }
     } catch (_) {}
-    if (attempt < 2) await Future.delayed(const Duration(milliseconds: 500));
+    if (attempt < 2) {
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
   }
-
   return const _UserRouteInfo(isSociety: false, hasCompletedProfile: false);
 }
