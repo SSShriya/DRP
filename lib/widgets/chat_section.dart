@@ -107,7 +107,7 @@ class ChatSection extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: 'Merriweather',
-                  fontSize: 1,
+                  fontSize: 12,
                   color: chat.unreadCount > 0
                       ? Colors.black87
                       : Colors.grey[600],
