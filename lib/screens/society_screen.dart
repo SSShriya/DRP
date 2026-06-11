@@ -359,20 +359,31 @@ class _SocietyScreenState extends State<SocietyScreen> {
     try {
       await EventService.uploadEventImage(result.image, societyId);
 
-      await supabase.from('events').insert({
-        'society_id': societyId,
-        'event_name': result.name,
-        'start_day': result.startDate.toIso8601String().split('T').first,
-        'start_time':
-            '${result.startTime.hour}:${result.startTime.minute.toString().padLeft(2, '0')}',
-        'end_day': result.endDate.toIso8601String().split('T').first,
-        'end_time':
-            '${result.endTime.hour}:${result.endTime.minute.toString().padLeft(2, '0')}',
-        'location': result.location,
-        'cost': result.price,
-        if (result.description != null) 'description': result.description,
-        if (result.latitude != null) 'latitude': result.latitude,
-        if (result.longitude != null) 'longitude': result.longitude,
+      final response = await supabase
+        .from('events')
+        .insert({
+          'society_id': societyId,
+          'event_name': result.name,
+          'start_day': result.startDate.toIso8601String().split('T').first,
+          'start_time':
+              '${result.startTime.hour}:${result.startTime.minute.toString().padLeft(2, '0')}',
+          'end_day': result.endDate.toIso8601String().split('T').first,
+          'end_time':
+              '${result.endTime.hour}:${result.endTime.minute.toString().padLeft(2, '0')}',
+          'location': result.location,
+          'cost': result.price,
+          if (result.description != null) 'description': result.description,
+          if (result.latitude != null) 'latitude': result.latitude,
+          if (result.longitude != null) 'longitude': result.longitude,
+        })
+        .select('event_id')  // ✅ asks Supabase to return the inserted row
+        .single();           // ✅ we inserted one row, so unwrap the list to a single map
+
+      final String newEventId = response['event_id'] as String;
+
+      await supabase.from('interested_events').insert({
+        'user_id': societyId,
+        'event_id': newEventId,
       });
 
       await _loadExistingProfile(); // refresh events list

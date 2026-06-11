@@ -124,8 +124,8 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final nameMatch = chat.name.toLowerCase().contains(query);
-        final interestMatch = chat.event.toLowerCase().contains(query);
-        if (!nameMatch && !interestMatch) return false;
+        final eventMatch = chat.event.toLowerCase().contains(query);
+        if (!nameMatch && !eventMatch) return false;
       }
 
       // --- Event filter ---
