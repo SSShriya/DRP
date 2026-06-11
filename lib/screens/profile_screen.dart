@@ -1,6 +1,5 @@
 // import 'dart:io';
 import 'package:drp/screens/main_shell.dart';
-import 'package:drp/screens/society_screen.dart';
 import 'package:drp/services/supabase_client.dart';
 import 'package:drp/widgets/society_nav_bar.dart';
 import 'package:flutter/material.dart';

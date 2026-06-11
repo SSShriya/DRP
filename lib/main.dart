@@ -1,7 +1,6 @@
 import 'package:app_links/app_links.dart';
 import 'package:drp/screens/main_shell.dart';
 import 'package:drp/screens/profile_screen.dart';
-import 'package:drp/screens/society_screen.dart';
 import 'package:drp/widgets/society_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
