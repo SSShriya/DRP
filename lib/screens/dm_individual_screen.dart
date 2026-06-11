@@ -408,7 +408,7 @@ class _DMScreenState extends State<DMScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFFEEC0C6),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300),
+                // border: Border.all(color: Colors.grey.shade300),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,9 +460,9 @@ class _DMScreenState extends State<DMScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFEEC0C6),
+                color: const Color(0xFF94d2bd),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300),
+                // border: Border.all(color: Colors.grey.shade300),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +514,10 @@ class _DMScreenState extends State<DMScreen> {
                 // 📅 Meeting hint
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFD6EAF8), // light blue
                       borderRadius: BorderRadius.circular(16),
@@ -542,10 +545,7 @@ class _DMScreenState extends State<DMScreen> {
                         const Text(
                           'Tap the 📅 in the top right to propose a time & place!',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black54,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                       ],
                     ),
@@ -557,7 +557,10 @@ class _DMScreenState extends State<DMScreen> {
                 // 💡 Suggestions hint
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF9E7), // light yellow
                       borderRadius: BorderRadius.circular(16),
@@ -585,10 +588,7 @@ class _DMScreenState extends State<DMScreen> {
                         const Text(
                           'Tap the 💡 in the top right for conversation prompts!',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black54,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                       ],
                     ),
