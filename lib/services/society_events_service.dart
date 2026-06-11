@@ -205,29 +205,43 @@ class SocietySharedState extends ChangeNotifier {
     notifyListeners();
     try {
       await EventService.uploadEventImage(image, societyId);
-      await supabase.from('events').insert({
-        'society_id': societyId,
-        'event_name': name,
-        'start_day': startDate.toIso8601String().split('T').first,
-        'start_time':
-            '${startTime.hour}:${startTime.minute.toString().padLeft(2, '0')}',
-        'end_day': endDate.toIso8601String().split('T').first,
-        'end_time':
-            '${endTime.hour}:${endTime.minute.toString().padLeft(2, '0')}',
-        'location': location,
-        'cost': price,
-        'description': description,
-        'latitude': latitude,
-        'longitude': longitude,
-        'meet_committee': committeeCanMeet,
-        'committee_meeting_location': committeeCanMeet
-            ? committeeMeetingLocation
-            : null,
-        'committee_meeting_time':
-            committeeCanMeet && committeeMeetingTime != null
-            ? '${committeeMeetingTime.hour}:${committeeMeetingTime.minute.toString().padLeft(2, '0')}'
-            : null,
+
+      // Insert and return the new event_id
+      final response = await supabase
+          .from('events')
+          .insert({
+            'society_id': societyId,
+            'event_name': name,
+            'start_day': startDate.toIso8601String().split('T').first,
+            'start_time':
+                '${startTime.hour}:${startTime.minute.toString().padLeft(2, '0')}',
+            'end_day': endDate.toIso8601String().split('T').first,
+            'end_time':
+                '${endTime.hour}:${endTime.minute.toString().padLeft(2, '0')}',
+            'location': location,
+            'cost': price,
+            ?'description': description,
+            ?'latitude': latitude,
+            ?'longitude': longitude,
+            'meet_committee': committeeCanMeet,
+            'meeting_location': committeeCanMeet
+                ? committeeMeetingLocation
+                : null,
+            'meeting_time': committeeCanMeet && committeeMeetingTime != null
+                ? '${committeeMeetingTime.hour}:${committeeMeetingTime.minute.toString().padLeft(2, '0')}'
+                : null,
+          })
+          .select('event_id')
+          .single();
+
+      final String newEventId = response['event_id'] as String;
+
+      // Also mark the society as interested in their own event
+      await supabase.from('interested_events').insert({
+        'user_id': societyId,
+        'event_id': newEventId,
       });
+
       await loadProfile();
     } catch (e) {
       debugPrint('Error creating event: $e');

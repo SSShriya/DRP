@@ -30,7 +30,6 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
         description: result.description,
         latitude: result.latitude,
         longitude: result.longitude,
-        // ── Committee fields ──────────────────────────────────────────
         committeeCanMeet: result.committeeCanMeet,
         committeeMeetingLocation: result.committeeMeetingLocation,
         committeeMeetingTime: result.committeeMeetingTime,
