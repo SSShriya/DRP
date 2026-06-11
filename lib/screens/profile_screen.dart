@@ -303,15 +303,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const Text(
           'Interest Photos',
           style: TextStyle(
+            fontFamily: 'Lora',
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 4),
         const Text(
           'Tap an interest to add an optional photo!',
-          style: TextStyle(fontSize: 13, color: Colors.grey),
+          style: TextStyle(
+            fontFamily: 'Bitter',
+            fontSize: 13,
+            color: Colors.grey,
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -337,12 +341,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   decoration: BoxDecoration(
                     // Highlight if a photo has been added
                     color: hasPhoto
-                        ? const Color(0xFF84DCC6).withValues(alpha: 0.15)
+                        ? const Color(0xFFACE1AF).withValues(alpha: 0.15)
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: hasPhoto
-                          ? const Color(0xFF84DCC6)
+                          ? const Color(0xFFACE1AF)
                           : Colors.grey.shade300,
                       width: 1.5,
                     ),
@@ -356,8 +360,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             : Icons.add_photo_alternate_outlined,
                         size: 16,
                         color: hasPhoto
-                            ? const Color(0xFF84DCC6)
-                            : Colors.grey.shade500,
+                            ? const Color(0xFFACE1AF)
+                            : Color(0xFF4D5359),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -366,8 +370,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: hasPhoto
-                              ? const Color(0xFF84DCC6)
-                              : Colors.black87,
+                              ? const Color.fromARGB(255, 130, 161, 132)
+                              : Color(0xFF4D5359),
                         ),
                       ),
                     ],
@@ -419,15 +423,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     displayName,
                     style: const TextStyle(
+                      fontFamily: 'Lora',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Color(0xFF4D5359),
                     ),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     'Add a photo that represents this interest.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                    style: TextStyle(
+                      fontFamily: 'Bitter',
+                      fontSize: 13,
+                      color: Colors.grey,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -503,10 +512,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       height: 160,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: Colors.grey.shade300,
+                          color: Color(0xFF4D5359),
                           width: 1.5,
                         ),
                       ),
@@ -516,14 +524,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Icon(
                             Icons.add_photo_alternate_outlined,
                             size: 40,
-                            color: Colors.grey.shade400,
+                            color: Color(0xFF4D5359),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'No photo yet',
                             style: TextStyle(
+                              fontFamily: 'Montserrat',
                               fontSize: 13,
-                              color: Colors.grey.shade400,
+                              color: Color(0xFF4D5359),
                             ),
                           ),
                         ],
@@ -549,10 +558,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           label: Text(
                             hasPhoto ? 'Change Photo' : 'Choose Photo',
+                            style: const TextStyle(fontFamily: 'Montserrat'),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF84DCC6),
-                            foregroundColor: Colors.white,
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              226,
+                              235,
+                              186,
+                            ),
+                            foregroundColor: const Color(0xFF4D5359),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -664,10 +679,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return TextFormField(
           controller: controller,
           focusNode: focusNode,
-          style: const TextStyle(fontFamily: 'Montserrat'),
+          style: const TextStyle(fontFamily: 'Merriweather'),
           decoration: InputDecoration(
             labelText: label,
-            labelStyle: const TextStyle(fontFamily: 'Montserrat'),
+            labelStyle: const TextStyle(fontFamily: 'Merriweather'),
             prefixIcon: Icon(prefixIcon),
             suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
             floatingLabelStyle: const TextStyle(
@@ -722,10 +737,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildYearGroupField() {
     return DropdownButtonFormField<String>(
       initialValue: _selectedYearGroup,
-      style: const TextStyle(fontFamily: 'Montserrat'),
+      style: const TextStyle(fontFamily: 'Merriweather'),
       decoration: InputDecoration(
         labelText: 'Year Group (optional)',
-        labelStyle: const TextStyle(fontFamily: 'Montserrat'),
+        labelStyle: const TextStyle(
+          fontFamily: 'Montserrat',
+          fontWeight: FontWeight.bold,
+        ),
         prefixIcon: const Icon(Icons.calendar_today_outlined),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
@@ -770,7 +788,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: const Color(0XFFF5F0F6),
       appBar: AppBar(
         title: const Text(
-          'Setup Profile',
+          'Setup Your Profile',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Color(0XFF84DCC6),
@@ -841,7 +859,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(6),
                                       decoration: const BoxDecoration(
-                                        color: Color(0XFF84DCC6),
+                                        color: Color(0xFF4D5359),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -911,19 +929,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             Text(
                               '${_interests.length}/$_maxInterests',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
+                              style: const TextStyle(
+                                fontFamily: 'Merriweather',
                                 fontSize: 13,
-                                color: Colors.grey.shade600,
+                                color: Color(0xFF4D5359),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
                         Text(
                           'Pick categories to explore interests',
                           style: const TextStyle(
-                            fontFamily: 'Montserrat',
+                            fontFamily: 'Bitter',
                             fontSize: 13,
                             color: Colors.grey,
                           ),
@@ -942,12 +959,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
+                                  color: Color(0X8FADD8E6),
                                   borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                    width: 1.5,
-                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -960,7 +973,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     Text(
                                       category.name,
                                       style: const TextStyle(
-                                        fontFamily: 'Montserrat',
+                                        fontFamily: 'Merriweather',
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                         color: Colors.black87,
@@ -983,15 +996,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 label: Text(
                                   interest,
                                   style: const TextStyle(
-                                    color: Colors.black87,
+                                    fontFamily: 'Merriweather',
+                                    color: Color(0xFF4D5359),
                                     fontSize: 13,
                                   ),
                                 ),
-                                backgroundColor: Colors.grey.shade200,
+                                backgroundColor: Color.fromARGB(
+                                  255,
+                                  210,
+                                  210,
+                                  249,
+                                ),
+                                side: const BorderSide(
+                                  color: Color(0XFF002147), // removes outline
+                                  width: 0,
+                                ),
                                 deleteIcon: const Icon(
                                   Icons.cancel,
                                   size: 18,
-                                  color: Colors.grey,
+                                  color: Color(0xFF4D5359),
                                 ),
                                 onDeleted: () => setState(() {
                                   _interests.remove(interest);
@@ -1013,15 +1036,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Text(
                         'Bio',
                         style: TextStyle(
+                          fontFamily: 'Lora',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Introduce yourself!',
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
                       ),
                       const SizedBox(height: 4),
                       TextFormField(
@@ -1029,11 +1048,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         maxLines: 3,
                         keyboardType: TextInputType.multiline,
                         decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
+                          hintText: 'Introduce yourself!',
+                          hintStyle: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
                           ),
                         ),
                       ),
@@ -1042,7 +1064,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ElevatedButton(
                         onPressed: _isLoading ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0XFF84DCC6),
+                          backgroundColor: const Color(0XFFDBB2D1),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -1168,10 +1190,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return TextFormField(
       controller: controller,
       textInputAction: TextInputAction.next,
-      style: const TextStyle(fontFamily: 'Montserrat'),
+      style: const TextStyle(fontFamily: 'Merriweather'),
       decoration: InputDecoration(
         labelText: required ? label : '$label (optional)',
-        labelStyle: const TextStyle(fontFamily: 'Montserrat'),
+        labelStyle: const TextStyle(fontFamily: 'Merriweather'),
         prefixIcon: Icon(icon),
         floatingLabelStyle: const TextStyle(
           fontFamily: 'Montserrat',
