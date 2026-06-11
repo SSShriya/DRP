@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 class ChatSection extends StatelessWidget {
   final String title;
   final List<ChatConversation> conversations;
+  final Map<String, List<String>> eventsInCommon; 
   final VoidCallback onRefresh;
   final bool currentChats; 
 
@@ -14,6 +15,7 @@ class ChatSection extends StatelessWidget {
     super.key,
     required this.title,
     required this.conversations,
+    required this.eventsInCommon,
     required this.onRefresh,
     this.currentChats = false,
   });
@@ -87,7 +89,7 @@ class ChatSection extends StatelessWidget {
                   ),
                   if (chat.event.isNotEmpty)
                     Text(
-                      chat.event,
+                      eventsInCommon[chat.otherUserId]!.join(", "),
                       style: GoogleFonts.montserrat(
                         fontSize: 11,
                         color: const Color.fromARGB(255, 228, 138, 150),

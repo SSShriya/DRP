@@ -1,8 +1,11 @@
+import 'package:drp/services/utils.dart';
+
 import '../main.dart';
 import 'package:drp/widgets/chat_section.dart';
 import 'package:flutter/material.dart';
 import '../models/match_convo.dart';
 import '../services/conversation_service.dart';
+import '../services/event_service.dart';
 
 class DMOverviewScreen extends StatefulWidget {
   const DMOverviewScreen({super.key});
@@ -13,6 +16,7 @@ class DMOverviewScreen extends StatefulWidget {
 
 class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
   final _conversationService = ConversationService();
+  final _eventService = EventService(); 
   List<ChatConversation> _conversations = [];
   bool isLoading = true;
 
@@ -20,6 +24,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
   String? _selectedEventId; 
   List<MapEntry<String, String>> _eventFilters = [];
   Map<String, ({String endDay, String endTime})> _eventEndTimes = {};
+  Map<String, List<String>> _eventsInCommon = {}; 
 
   String _searchQuery = '';
 
@@ -66,12 +71,18 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
     
     final endTimes = await _conversationService.getEventEndTimes(eventIds);
 
+    final myId = await loadUserId(); 
+
+    // Map of otherUserId to all events in common
+    final Map<String, List<String>> eventsInCommon = {};
+
     // Event filter chips
     final seen = <String>{};
     final filters = <MapEntry<String, String>>[];
     for (final chat in convos) {
       if (_isChatCurrent(chat) && seen.add(chat.eventId)) {
         filters.add(MapEntry(chat.eventId, chat.event));
+        eventsInCommon[chat.otherUserId] = await _eventService.eventsInCommon(myId, chat.otherUserId);
       }
     }
 
@@ -79,6 +90,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
       _conversations = convos;
       _eventEndTimes = endTimes; 
       _eventFilters = filters; 
+      _eventsInCommon = eventsInCommon; 
       isLoading = false;
     });
   }
@@ -229,6 +241,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
                         ChatSection(
                           title: 'Current Chats',
                           conversations: filteredCurrentConvos,
+                          eventsInCommon: _eventsInCommon,
                           onRefresh: _loadConversations,
                           currentChats: true,
                         ),
@@ -238,6 +251,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
                         ChatSection(
                           title: 'Contact a Committee Member',
                           conversations: filteredSocietyConvos,
+                          eventsInCommon: _eventsInCommon,
                           onRefresh: _loadConversations,
                           currentChats: true,
                         ),
@@ -247,6 +261,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
                         ChatSection(
                           title: 'Old Chats',
                           conversations: filteredOldConvos,
+                          eventsInCommon: _eventsInCommon,
                           onRefresh: _loadConversations,
                         ),
                     ],

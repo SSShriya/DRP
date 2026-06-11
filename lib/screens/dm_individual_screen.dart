@@ -63,8 +63,8 @@ class _DMScreenState extends State<DMScreen> {
 
   Future<void> _initChatAndStartPolling() async {
     _myUserId = await loadUserId();
-    await _loadMessages(forceScroll: true);
-    _eventsInCommon = await _eventService.eventsInCommon(_myUserId, widget.chat.otherUserId); 
+    _eventsInCommon = await _eventService.eventsInCommon(_myUserId, widget.chat.otherUserId);
+    await _loadMessages(forceScroll: true); 
     _pollingTimer = Timer.periodic(
       const Duration(seconds: 1),
       (_) => _loadMessages(),
