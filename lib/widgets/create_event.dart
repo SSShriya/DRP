@@ -3,7 +3,6 @@ import 'package:drp/widgets/pick_location_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 /// Data class returned when the user confirms the form.
@@ -249,14 +248,19 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     if (result != null) {
       setState(() {
         _pickedLocation = result;
-        // _locationController.text =
-        //     '${result.latitude.toStringAsFixed(5)}, ${result.longitude.toStringAsFixed(5)}';
       });
     }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Custom check: Ensure either typed location or map coordinate is chosen
+    final textLocation = _locationController.text.trim();
+    if (textLocation.isEmpty && _pickedLocation == null) {
+      _snack('Please type an address or select a location on the map.');
+      return;
+    }
 
     if (_startDate == null || _startTime == null) {
       _snack('Please set a start date and time.');
@@ -295,7 +299,10 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       startTime: _startTime!,
       endDate: _endDate!,
       endTime: _endTime!,
-      location: _locationController.text.trim(),
+      // If text string is empty but pin exists, fallback to a readable coordinate string
+      location: textLocation.isNotEmpty 
+          ? textLocation 
+          : '${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}',
       latitude: _pickedLocation?.latitude,
       longitude: _pickedLocation?.longitude,
       price: double.tryParse(_priceController.text.trim()) ?? 0,
@@ -330,15 +337,15 @@ class _CreateEventFormState extends State<_CreateEventForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header adapts conditionally based on mode
             Container(
               width: double.infinity,
-              color: Color.fromARGB(255, 131, 187, 219),
+              color: const Color.fromARGB(255, 131, 187, 219),
               padding: const EdgeInsets.symmetric(vertical: 18),
               child: Text(
                 isEditingMode ? 'EDIT EVENT' : 'NEW EVENT',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.lora(
+                style: const TextStyle(
+                  fontFamily: 'Lora',
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -490,7 +497,6 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Clear pin button — only shown when a pin exists
                               if (_pickedLocation != null)
                                 IconButton(
                                   icon: const Icon(Icons.close, size: 18),
@@ -498,7 +504,6 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                                   onPressed: () =>
                                       setState(() => _pickedLocation = null),
                                 ),
-                              // Map picker button
                               IconButton(
                                 icon: const Icon(Icons.map_outlined),
                                 tooltip: 'Pick on map',
@@ -511,18 +516,9 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Enter a location'
-                            : null,
-                        onChanged: (_) {
-                          // If user edits text manually, detach the map pin
-                          if (_pickedLocation != null) {
-                            setState(() => _pickedLocation = null);
-                          }
-                        },
+                        // Removed strict validator here so form can process logic dynamically in _save()
                       ),
 
-                      // Optional: small "pinned" indicator below the field
                       if (_pickedLocation != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 6, left: 4),
@@ -585,7 +581,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                         label: _isSaving
                             ? ''
                             : (isEditingMode ? 'SAVE CHANGES' : 'CREATE EVENT'),
-                        color: Color.fromARGB(255, 164, 204, 228),
+                        color: const Color.fromARGB(255, 164, 204, 228),
                         onPressed: _isSaving ? null : _save,
                         child: _isSaving
                             ? const SizedBox(
@@ -627,7 +623,6 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     required IconData icon,
     String? Function(String?)? validator,
     int maxLines = 1,
-
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
   }) {
@@ -635,10 +630,11 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       controller: controller,
       validator: validator,
       maxLines: maxLines,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         floatingLabelBehavior: FloatingLabelBehavior.always,
-
         prefixIcon: Icon(icon),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -646,7 +642,6 @@ class _CreateEventFormState extends State<_CreateEventForm> {
   }
 }
 
-// (Keep all your small reusable sub-widgets exactly the same below)
 class _SectionLabel extends StatelessWidget {
   final String label;
   final Color color;
@@ -656,7 +651,8 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: GoogleFonts.montserrat(
+      style: TextStyle(
+        fontFamily: 'Montserrat',
         fontSize: 12,
         fontWeight: FontWeight.normal,
         letterSpacing: 1.2,
@@ -688,17 +684,17 @@ class _ImagePicker extends StatelessWidget {
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.add_photo_alternate_outlined,
                     size: 32,
-                    color: const Color(0xFF4D5359),
+                    color: Color(0xFF4D5359),
                   ),
                   const SizedBox(height: 6),
-                  Text(
+                  const Text(
                     'Add banner image (optional)',
                     style: TextStyle(
                       fontSize: 13,
-                      color: const Color(0xFF4D5359),
+                      color: Color(0xFF4D5359),
                     ),
                   ),
                 ],
@@ -707,10 +703,10 @@ class _ImagePicker extends StatelessWidget {
                 alignment: Alignment.bottomRight,
                 child: Padding(
                   padding: const EdgeInsets.all(8),
-                  child: CircleAvatar(
+                  child: const CircleAvatar(
                     radius: 14,
-                    backgroundColor: const Color(0XFF84DCC6),
-                    child: const Icon(
+                    backgroundColor: Color(0XFF84DCC6),
+                    child: Icon(
                       Icons.edit,
                       size: 14,
                       color: Colors.white,
@@ -752,8 +748,7 @@ class _ActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child:
-            child ??
+        child: child ??
             Text(
               label,
               style: const TextStyle(
