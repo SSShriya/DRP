@@ -626,7 +626,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                       Container(
                         decoration: BoxDecoration(
                           color: _committeeCanMeet
-                              ? const Color(0xFF84DCC6).withOpacity(0.12)
+                              ? const Color(0xFF84DCC6).withValues(alpha: 0.12)
                               : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
@@ -645,7 +645,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                             style: TextStyle(fontSize: 14),
                           ),
                           value: _committeeCanMeet,
-                          activeColor: const Color(0xFF84DCC6),
+                          activeThumbColor: const Color(0xFF84DCC6),
                           onChanged: (val) {
                             setState(() {
                               _committeeCanMeet = val;

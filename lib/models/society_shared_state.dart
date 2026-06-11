@@ -7,7 +7,6 @@ import 'package:drp/services/supabase_client.dart';
 import 'package:drp/services/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SocietySharedState extends ChangeNotifier {
   String societyId = '';
@@ -214,9 +213,9 @@ class SocietySharedState extends ChangeNotifier {
             '${endTime.hour}:${endTime.minute.toString().padLeft(2, '0')}',
         'location': location,
         'cost': price,
-        if (description != null) 'description': description,
-        if (latitude != null) 'latitude': latitude,
-        if (longitude != null) 'longitude': longitude,
+        'description': description,
+        'latitude': latitude,
+        'longitude': longitude,
       });
       await loadProfile();
     } catch (e) {
@@ -258,9 +257,9 @@ class SocietySharedState extends ChangeNotifier {
                 '${endTime.hour}:${endTime.minute.toString().padLeft(2, '0')}',
             'location': location,
             'cost': price,
-            if (description != null) 'description': description,
-            if (latitude != null) 'latitude': latitude,
-            if (longitude != null) 'longitude': longitude,
+            'description': description,
+            'latitude': latitude,
+            'longitude': longitude,
           })
           .eq('event_id', eventId);
       await loadProfile();

@@ -150,7 +150,7 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: (isPast ? Colors.grey : const Color(0xFF84DCC6))
-                  .withOpacity(0.1),
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
