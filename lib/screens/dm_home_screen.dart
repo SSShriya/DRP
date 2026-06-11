@@ -109,8 +109,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final nameMatch = chat.name.toLowerCase().contains(query);
-        final interestMatch = chat.interests
-            .any((i) => i.toLowerCase().contains(query));
+        final interestMatch = chat.event.toLowerCase().contains(query);
         if (!nameMatch && !interestMatch) return false;
       }
 
@@ -185,7 +184,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
                           });
                         },
                         decoration: InputDecoration(
-                          hintText: 'Search by name or interest...',
+                          hintText: 'Search by name or event...',
                           prefixIcon: const Icon(Icons.search, color: Colors.grey),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
