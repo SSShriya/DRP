@@ -400,7 +400,7 @@ class _DMScreenState extends State<DMScreen> {
       children: [
         const SizedBox(height: 16),
 
-        if (!widget.chat.isSociety && widget.chat.event.isNotEmpty)
+        if (widget.chat.event.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -415,7 +415,7 @@ class _DMScreenState extends State<DMScreen> {
                 children: [
                   Text(
                     textAlign: TextAlign.center,
-                    "You Are Both Attending:",
+                    widget.chat.isSociety ? "Events You Are Attending:" : "You Are Both Attending:",
                     style: const TextStyle(
                       fontFamily: 'Merriweather',
                       fontSize: 14,
