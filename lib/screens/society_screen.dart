@@ -75,7 +75,7 @@ class _SocietyScreenState extends State<SocietyScreen> {
           _aboutController.text = socData['description'] ?? '';
 
           // Pre-populate avatar if one already exists
-          _existingImageUrl = socData['image_url'];
+          _existingImageUrl = socData['avatar_url'];
 
           // Pre-populate events list
           _events.clear();
@@ -306,7 +306,10 @@ class _SocietyScreenState extends State<SocietyScreen> {
         await uploadSocImage(_imageFile!, societyId);
       }
 
-      updateSocDetails(id: societyId, about: _aboutController.text.trim());
+      await updateSocDetails(id: societyId, about: _aboutController.text.trim());
+
+      _imageFile = null; 
+      await _loadExistingProfile();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -333,7 +336,6 @@ class _SocietyScreenState extends State<SocietyScreen> {
     }
   }
 
-  // Method placeholder for creating a new event
   void _addNewEvent() async {
     final result = await showNewEventPopup(context);
     if (result == null) return;
@@ -498,7 +500,6 @@ class _SocietyScreenState extends State<SocietyScreen> {
             children: [
               const SizedBox(height: 10),
 
-              // 1. Society Picture Slot with Image rendering logic
               GestureDetector(
                 onTap: _pickSocietyImage,
                 child: Stack(
@@ -506,7 +507,6 @@ class _SocietyScreenState extends State<SocietyScreen> {
                     CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.grey.shade300,
-                      // Logic checks: 1. Newly selected local file -> 2. Network URL from DB -> 3. Default Icon
                       backgroundImage: _imageFile != null
                           ? FileImage(_imageFile!)
                           : (_existingImageUrl != null &&
