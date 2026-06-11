@@ -296,68 +296,72 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
             ),
             const SizedBox(height: 12),
 
-            _Card(
-              color: Color(0X8FAAFFAA),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "COMMITTEE MEMBERS",
-                        style: TextStyle(
-                          color: Color(0XFF222222),
-                          fontSize: 14,
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.bold,
+            if (_canMessage)
+              _Card(
+                color: Color(0X8FAAFFAA),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "COMMITTEE MEMBERS",
+                          style: TextStyle(
+                            color: Color(0XFF222222),
+                            fontSize: 14,
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Divider(color: Colors.black12),
-
-                  if (_committee.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text(
-                        "No committee members added yet.",
-                        style: TextStyle(
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    )
-                  else
-                    // Renders the list items sequentially
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: _committee.length,
-                      itemBuilder: (context, index) {
-                        final member = _committee[index];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white60,
-                            child: Icon(Icons.person, color: Color(0XFF222222)),
-                          ),
-                          title: Text(
-                            member['name'] ?? '',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Montserrat',
-                            ),
-                          ),
-                          subtitle: Text(
-                            member['role'] ?? '',
-                            style: TextStyle(color: Colors.grey[800]),
-                          ),
-                        );
-                      },
+                      ],
                     ),
-                ],
+                    Divider(color: Colors.black12),
+
+                    if (_committee.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Text(
+                          "No committee members added yet.",
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      )
+                    else
+                      // Renders the list items sequentially
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: _committee.length,
+                        itemBuilder: (context, index) {
+                          final member = _committee[index];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.white60,
+                              child: Icon(
+                                Icons.person,
+                                color: Color(0XFF222222),
+                              ),
+                            ),
+                            title: Text(
+                              member['name'] ?? '',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Montserrat',
+                              ),
+                            ),
+                            subtitle: Text(
+                              member['role'] ?? '',
+                              style: TextStyle(color: Colors.grey[800]),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
               ),
-            ),
 
             const SizedBox(height: 12),
 
