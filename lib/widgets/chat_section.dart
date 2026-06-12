@@ -129,7 +129,7 @@ class ChatSection extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       child: Text(
-                        'NEW',
+                        'SAY HI!',
                         style: const TextStyle(
                           fontFamily: 'Montserrat',
                           color: Color.fromARGB(255, 234, 78, 67),
