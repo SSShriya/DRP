@@ -1036,7 +1036,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           color: Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      Text(
+                          'Favorite quotes? Ideal day off? Passion projects? Show off your personality and flare!',
+                          style: const TextStyle(
+                            fontFamily: 'Bitter',
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      const SizedBox(height: 10),
                       TextFormField(
                         controller: _bioController,
                         maxLines: 3,
