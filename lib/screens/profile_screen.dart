@@ -291,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     await supabase.auth.signOut();
     await SessionManager.clearSession();
-    // if (mounted) Navigator.pushReplacementNamed(context, '/signup');
+    if (mounted) Navigator.pushReplacementNamed(context, '/signup');
   }
 
   // ── Interest Photo Gallery Section ───────────────────────────────────────
