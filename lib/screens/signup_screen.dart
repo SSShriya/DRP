@@ -16,7 +16,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _passwordFocusNode = FocusNode();
   final _nameController = TextEditingController();
-/*
+  /*
   final _uniEmailDomains = [
     'student.bbk.ac.uk',
     'brunel.ac.uk',
@@ -72,42 +72,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _holdsEvents = false;
 
   @override
+  void initState() {
+    super.initState();
+    debugPrint('🟡 SIGNUPSCREEN: initState');
+  }
+
+  @override
   void dispose() {
+    debugPrint('🟡 SIGNUPSCREEN: dispose called, mounted=$mounted');
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+    debugPrint('🟡 SIGNUPSCREEN: dispose finished');
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    debugPrint(
+      '🟡 SIGNUPSCREEN: _handleSubmit called, isSignUpMode=$_isSignUpMode',
+    );
     setState(() => _isLoading = true);
 
     try {
       if (_isSignUpMode) {
+        debugPrint('🟡 SIGNUPSCREEN: calling authService.signUp');
         await _authService.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
           name: _nameController.text.trim(),
           isSociety: _holdsEvents,
         );
+        debugPrint('🟡 SIGNUPSCREEN: signUp completed');
       } else {
+        debugPrint('🟡 SIGNUPSCREEN: calling authService.signIn');
         await _authService.signIn(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
+        debugPrint('🟡 SIGNUPSCREEN: signIn completed');
       }
     } on AuthException catch (e) {
+      debugPrint('🟡 SIGNUPSCREEN: AuthException: ${e.message}');
       if (mounted) _showErrorSnackBar(e.message);
     } catch (e) {
+      debugPrint('🟡 SIGNUPSCREEN: unexpected error: $e');
       if (mounted) _showErrorSnackBar('An unexpected error occurred: $e');
     } finally {
+      debugPrint('🟡 SIGNUPSCREEN: _handleSubmit finally, mounted=$mounted');
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showErrorSnackBar(String message) {
+    debugPrint('🟡 SIGNUPSCREEN: showing error snackbar: $message');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
     );
@@ -115,6 +134,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🟡 SIGNUPSCREEN: build called, isSignUpMode=$_isSignUpMode');
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -276,9 +296,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ).hasMatch(value.trim())) {
                         return 'Please enter a valid email address';
                       }
-                    //  if(!_uniEmailDomains.contains(value.trim().toLowerCase().split('@')[1])) {
-                    //     return 'Please use your university email address (ending in .ac.uk)';
-                    //  }
+                      //  if(!_uniEmailDomains.contains(value.trim().toLowerCase().split('@')[1])) {
+                      //     return 'Please use your university email address (ending in .ac.uk)';
+                      //  }
                       return null;
                     },
                   ),
