@@ -43,6 +43,7 @@ Future<void> uploadSocImage(XFile imageFile, String socId) async {
   final filePath = '$socId/profile.jpg';
   try {
     final bytes = await imageFile.readAsBytes();
+
     await supabase.storage
         .from('avatars')
         .uploadBinary(
@@ -53,11 +54,20 @@ Future<void> uploadSocImage(XFile imageFile, String socId) async {
             contentType: 'image/jpeg',
           ),
         );
-    final publicUrl = supabase.storage.from('avatars').getPublicUrl(filePath);
-    await supabase
+
+    final rawUrl = supabase.storage.from('avatars').getPublicUrl(filePath);
+    final cacheBustedUrl = '$rawUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+    // .select() confirms the row was actually updated
+    final result = await supabase
         .from('users')
-        .update({'avatar_url': publicUrl})
-        .eq('id', socId);
+        .update({'avatar_url': cacheBustedUrl})
+        .eq('id', socId)
+        .select('id, avatar_url');
+
+    if (result.isEmpty) {
+      throw Exception('No row matched socId=$socId in users table.');
+    }
   } on StorageException catch (e) {
     throw Exception('Failed to upload profile picture: ${e.message}');
   } catch (e) {

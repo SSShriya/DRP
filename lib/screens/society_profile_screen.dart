@@ -20,7 +20,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
   String? _societyName;
   String? _existingImageUrl;
   bool _isLoading = false;
-  XFile? _imageFile;
   Uint8List? _imageBytes;
   bool _canContact = false;
   final _aboutController = TextEditingController();
@@ -87,13 +86,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // ── _saveDetails — clear both after upload ────────────────────────────────
-      if (_imageFile != null) {
-        await uploadSocImage(_imageFile!, _societyId);
-        if (_disposed) return;
-        _imageFile = null;
-        _imageBytes = null;
-      }
+      // Image is already uploaded in _pickImage, just save bio here
       await updateSocDetails(id: _societyId, bio: _aboutController.text.trim());
       if (_disposed) return;
       await _loadProfile();
@@ -110,18 +103,57 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
   }
 
   // ── Image picker ───────────────────────────────────────────────────────────
-  // ── _pickImage ────────────────────────────────────────────────────────────
   Future<void> _pickImage() async {
     final XFile? picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 70,
     );
-    if (picked != null && mounted) {
-      final bytes = await picked.readAsBytes();
+    if (picked == null || !mounted) return;
+
+    final bytes = await picked.readAsBytes();
+
+    // Show preview immediately
+    setState(() {
+      _imageBytes = bytes;
+    });
+
+    // Upload straight away — no save button needed
+    if (_societyId.isEmpty) {
+      _snack('Session not found. Please log in again.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await uploadSocImage(picked, _societyId);
+      if (_disposed || !mounted) return;
+
+      // Re-fetch the saved URL from DB so it displays correctly
+      final socData = await supabase
+          .from('users')
+          .select('avatar_url')
+          .eq('id', _societyId)
+          .maybeSingle();
+
+      if (_disposed || !mounted) return;
+
       setState(() {
-        _imageFile = picked;
-        _imageBytes = bytes;
+        _existingImageUrl = socData?['avatar_url'];
+        // Clear the local file/bytes — now using the remote URL
+        _imageBytes = null;
       });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile picture updated!')));
+    } catch (e) {
+      if (!_disposed && mounted) _snack('Failed to upload image.');
+      // Revert preview on failure
+      setState(() {
+        _imageBytes = null;
+      });
+    } finally {
+      if (!_disposed && mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -374,6 +406,8 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                         children: [
                           // ── Avatar in build — use MemoryImage for preview like ProfileScreen ──────
                           CircleAvatar(
+                            // ✅ Key forces Flutter to rebuild the widget when the URL changes
+                            key: ValueKey(_existingImageUrl),
                             radius: 60,
                             backgroundColor: Colors.grey.shade300,
                             backgroundImage: _imageBytes != null

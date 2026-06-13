@@ -1364,7 +1364,7 @@ class _ImagePicker extends StatelessWidget {
                           ? child
                           : Container(color: Colors.grey.shade200),
                       // On error fall back to the placeholder icon
-                      errorBuilder: (_, __, ___) => _placeholder(),
+                      errorBuilder: (_, _, _) => _placeholder(),
                     ),
                     // Edit badge in the corner
                     const Align(
