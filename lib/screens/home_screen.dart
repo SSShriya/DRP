@@ -386,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               ),
             ),
             SizedBox(
-              height: 140,
+              height: 170,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
