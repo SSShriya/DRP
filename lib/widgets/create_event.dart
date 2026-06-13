@@ -21,7 +21,6 @@ class NewEventData {
   final bool committeeCanMeet;
   final String? committeeMeetingLocation;
   final TimeOfDay? committeeMeetingTime;
-  // ── NEW ──────────────────────────────────────────────────────────────────
   final String? committeeMemberId;
 
   const NewEventData({
@@ -59,7 +58,6 @@ Future<NewEventData?> showNewEventPopup(
   bool existingCommitteeCanMeet = false,
   String? existingCommitteeMeetingLocation,
   TimeOfDay? existingCommitteeMeetingTime,
-  // ── NEW ────────────────────────────────────────────────────────────────
   String? existingCommitteeMemberId,
   String? societyId,
 }) {
@@ -142,7 +140,6 @@ class _CreateEventFormState extends State<_CreateEventForm> {
   bool _committeeCanMeet = false;
   TimeOfDay? _committeeMeetingTime;
 
-  // ── NEW: selected committee member ────────────────────────────────────────
   String? _selectedCommitteeMemberId;
   List<Map<String, dynamic>> _committeeMembers = [];
   bool _loadingMembers = false;
@@ -156,6 +153,17 @@ class _CreateEventFormState extends State<_CreateEventForm> {
   XFile? _imageFile;
   Uint8List? _imageBytes;
   bool _isSaving = false;
+
+  // ── Inline error messages ─────────────────────────────────────────────────
+  // Each nullable string holds the current error for that field.
+  // null  → no error shown
+  // non-null → red error text rendered beneath the field
+  String? _startDateError;
+  String? _endDateError;
+  String? _locationError;
+  String? _committeeMemberError;
+  String? _committeeMeetingLocationError;
+  String? _committeeMeetingTimeError;
 
   @override
   void initState() {
@@ -191,13 +199,27 @@ class _CreateEventFormState extends State<_CreateEventForm> {
         ? LatLng(widget.existingLatitude!, widget.existingLongitude!)
         : null;
 
-    // Load committee members if societyId provided
     if (widget.societyId != null) {
       _loadCommitteeMembers();
     }
+
+    // Clear location error when the user types
+    _locationController.addListener(() {
+      if (_locationError != null &&
+          _locationController.text.trim().isNotEmpty) {
+        setState(() => _locationError = null);
+      }
+    });
+
+    // Clear committee meeting location error when the user types
+    _committeeMeetingLocationController.addListener(() {
+      if (_committeeMeetingLocationError != null &&
+          _committeeMeetingLocationController.text.trim().isNotEmpty) {
+        setState(() => _committeeMeetingLocationError = null);
+      }
+    });
   }
 
-  // ── Load committee members from Supabase ──────────────────────────────────
   Future<void> _loadCommitteeMembers() async {
     setState(() => _loadingMembers = true);
     try {
@@ -259,10 +281,14 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     setState(() {
       if (isStart) {
         _startDate = picked;
+        // Clear the start date/time error as soon as a date is picked
+        _startDateError = null;
         _endDate ??= picked;
         if (_endDate!.isBefore(picked)) _endDate = picked;
       } else {
         _endDate = picked;
+        // Clear the end date/time error as soon as a date is picked
+        _endDateError = null;
       }
     });
   }
@@ -289,12 +315,16 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     setState(() {
       if (isStart) {
         _startTime = picked;
+        // Clear start error once both date+time are set
+        if (_startDate != null) _startDateError = null;
         _endTime ??= TimeOfDay(
           hour: (picked.hour + 1) % 24,
           minute: picked.minute,
         );
       } else {
         _endTime = picked;
+        // Clear end error once both date+time are set
+        if (_endDate != null) _endDateError = null;
       }
     });
   }
@@ -314,7 +344,11 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       ),
     );
     if (picked == null) return;
-    setState(() => _committeeMeetingTime = picked);
+    setState(() {
+      _committeeMeetingTime = picked;
+      // Clear the meeting time error once a time is chosen
+      _committeeMeetingTimeError = null;
+    });
   }
 
   Future<void> _pickImage() async {
@@ -338,39 +372,104 @@ class _CreateEventFormState extends State<_CreateEventForm> {
         builder: (_) => PickLocationMap(initialLocation: _pickedLocation),
       ),
     );
-    if (result != null) setState(() => _pickedLocation = result);
+    if (result != null) {
+      setState(() {
+        _pickedLocation = result;
+        // A map pin counts as a valid location — clear the error
+        _locationError = null;
+      });
+    }
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    // ── 1. Run Flutter form validators (name, price) ──────────────────────
+    final formValid = _formKey.currentState!.validate();
+
+    // ── 2. Validate every custom (non-TextFormField) field ────────────────
+    //       Collect ALL errors before returning so every field lights up at once.
+    String? startDateErr;
+    String? endDateErr;
+    String? locationErr;
+    String? committeeMemberErr;
+    String? committeeMeetingLocationErr;
+    String? committeeMeetingTimeErr;
 
     final textLocation = _locationController.text.trim();
     if (textLocation.isEmpty && _pickedLocation == null) {
-      _snack('Please type an address or select a location on the map.');
-      return;
+      locationErr = 'Enter an address or pick a location on the map';
     }
+
     if (_startDate == null || _startTime == null) {
-      _snack('Please set a start date and time.');
-      return;
+      startDateErr = _startDate == null && _startTime == null
+          ? 'Please select a start date and time'
+          : _startDate == null
+          ? 'Please select a start date'
+          : 'Please select a start time';
     }
+
     if (_endDate == null || _endTime == null) {
-      _snack('Please set an end date and time.');
-      return;
+      endDateErr = _endDate == null && _endTime == null
+          ? 'Please select an end date and time'
+          : _endDate == null
+          ? 'Please select an end date'
+          : 'Please select an end time';
     }
+
+    // Only validate end > start when both are fully set
+    if (startDateErr == null && endDateErr == null) {
+      final startDT = DateTime(
+        _startDate!.year,
+        _startDate!.month,
+        _startDate!.day,
+        _startTime!.hour,
+        _startTime!.minute,
+      );
+      final endDT = DateTime(
+        _endDate!.year,
+        _endDate!.month,
+        _endDate!.day,
+        _endTime!.hour,
+        _endTime!.minute,
+      );
+      if (!endDT.isAfter(startDT)) {
+        endDateErr = 'End date/time must be after the start';
+      }
+    }
+
     if (_committeeCanMeet) {
       if (_selectedCommitteeMemberId == null) {
-        _snack('Please select a committee member.');
-        return;
+        committeeMemberErr = 'Please select a committee member';
       }
       if (_committeeMeetingLocationController.text.trim().isEmpty) {
-        _snack('Please enter a meeting location for the committee member.');
-        return;
+        committeeMeetingLocationErr = 'Please enter a meeting location';
       }
       if (_committeeMeetingTime == null) {
-        _snack('Please select a meeting time for the committee member.');
-        return;
+        committeeMeetingTimeErr = 'Please select a meeting time';
       }
     }
+
+    // ── 3. Push all errors into state at once ─────────────────────────────
+    setState(() {
+      _startDateError = startDateErr;
+      _endDateError = endDateErr;
+      _locationError = locationErr;
+      _committeeMemberError = committeeMemberErr;
+      _committeeMeetingLocationError = committeeMeetingLocationErr;
+      _committeeMeetingTimeError = committeeMeetingTimeErr;
+    });
+
+    // ── 4. Bail out if anything is invalid ────────────────────────────────
+    if (!formValid ||
+        startDateErr != null ||
+        endDateErr != null ||
+        locationErr != null ||
+        committeeMemberErr != null ||
+        committeeMeetingLocationErr != null ||
+        committeeMeetingTimeErr != null) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
 
     final startDT = DateTime(
       _startDate!.year,
@@ -379,20 +478,6 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       _startTime!.hour,
       _startTime!.minute,
     );
-    final endDT = DateTime(
-      _endDate!.year,
-      _endDate!.month,
-      _endDate!.day,
-      _endTime!.hour,
-      _endTime!.minute,
-    );
-
-    if (!endDT.isAfter(startDT)) {
-      _snack('End must be after start.');
-      return;
-    }
-
-    setState(() => _isSaving = true);
 
     final result = NewEventData(
       name: _nameController.text.trim(),
@@ -402,7 +487,8 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       endTime: _endTime!,
       location: textLocation.isNotEmpty
           ? textLocation
-          : '${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}',
+          : '${_pickedLocation!.latitude.toStringAsFixed(5)}, '
+                '${_pickedLocation!.longitude.toStringAsFixed(5)}',
       latitude: _pickedLocation?.latitude,
       longitude: _pickedLocation?.longitude,
       price: double.tryParse(_priceController.text.trim()) ?? 0,
@@ -421,9 +507,110 @@ class _CreateEventFormState extends State<_CreateEventForm> {
     if (mounted) Navigator.of(context).pop(result);
   }
 
-  void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.redAccent),
+  // ── Inline error text widget ──────────────────────────────────────────────
+  // Renders a red error line that matches Flutter's native TextFormField style.
+  Widget _errorText(String? error) {
+    if (error == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, left: 14),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, size: 13, color: Colors.redAccent),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              error,
+              style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Date/time row with inline error ──────────────────────────────────────
+  Widget _buildDateTimeRow({required bool isStart, required String? error}) {
+    final date = isStart ? _startDate : _endDate;
+    final time = isStart ? _startTime : _endTime;
+    final hasError = error != null;
+
+    final errorBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () => _pickDate(isStart: isStart),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Date',
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    prefixIcon: Icon(
+                      Icons.calendar_today_outlined,
+                      color: hasError ? Colors.redAccent : null,
+                    ),
+                    labelStyle: hasError
+                        ? const TextStyle(color: Colors.redAccent)
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: hasError ? errorBorder : null,
+                    focusedBorder: hasError ? errorBorder : null,
+                  ),
+                  child: Text(
+                    _fmt(date),
+                    style: TextStyle(
+                      color: date == null
+                          ? (hasError ? Colors.redAccent : Colors.grey.shade500)
+                          : Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: InkWell(
+                onTap: () => _pickTime(isStart: isStart),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Time',
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    prefixIcon: Icon(
+                      Icons.access_time_outlined,
+                      color: hasError ? Colors.redAccent : null,
+                    ),
+                    labelStyle: hasError
+                        ? const TextStyle(color: Colors.redAccent)
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: hasError ? errorBorder : null,
+                    focusedBorder: hasError ? errorBorder : null,
+                  ),
+                  child: Text(
+                    _fmtTime(time),
+                    style: TextStyle(
+                      color: time == null
+                          ? (hasError ? Colors.redAccent : Colors.grey.shade500)
+                          : Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        _errorText(error),
+      ],
     );
   }
 
@@ -456,8 +643,9 @@ class _CreateEventFormState extends State<_CreateEventForm> {
       );
     }
 
-    final bool showError =
-        _committeeCanMeet && _selectedCommitteeMemberId == null;
+    // Use the dedicated state variable instead of a local derived bool so the
+    // error persists until the user actually selects a member.
+    final bool showError = _committeeMemberError != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,7 +656,6 @@ class _CreateEventFormState extends State<_CreateEventForm> {
               'Select Committee Member',
               style: TextStyle(fontSize: 12, color: Colors.black54),
             ),
-            // ── Required star ──────────────────────────────────────────
             const Text(
               ' *',
               style: TextStyle(fontSize: 12, color: Colors.redAccent),
@@ -489,6 +676,8 @@ class _CreateEventFormState extends State<_CreateEventForm> {
               return GestureDetector(
                 onTap: () => setState(() {
                   _selectedCommitteeMemberId = isSelected ? null : id;
+                  // Clear error as soon as a member is tapped
+                  if (!isSelected) _committeeMemberError = null;
                 }),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
@@ -568,15 +757,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
             }).toList(),
           ),
         ),
-        // ── Error hint ───────────────────────────────────────────────────
-        if (showError)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 4),
-            child: Text(
-              'Please select a committee member',
-              style: TextStyle(fontSize: 11, color: Colors.redAccent),
-            ),
-          ),
+        _errorText(_committeeMemberError),
         const SizedBox(height: 12),
       ],
     );
@@ -594,6 +775,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ── Header ──────────────────────────────────────────────────────
             Container(
               width: double.infinity,
               color: const Color.fromARGB(255, 131, 187, 219),
@@ -622,175 +804,126 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                       _ImagePicker(bytes: _imageBytes, onTap: _pickImage),
                       const SizedBox(height: 25),
 
+                      // ── Event name ───────────────────────────────────────
                       _field(
                         controller: _nameController,
                         label: 'Event Name',
                         icon: Icons.celebration_outlined,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Enter a name'
+                            ? 'Please enter an event name'
                             : null,
                       ),
                       const SizedBox(height: 14),
 
+                      // ── Start date & time ────────────────────────────────
                       _SectionLabel(
                         label: 'Start Date & Time',
                         color: Colors.black,
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => _pickDate(isStart: true),
-                              child: InputDecorator(
-                                decoration: InputDecoration(
-                                  labelText: 'Date',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  prefixIcon: const Icon(
-                                    Icons.calendar_today_outlined,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(_fmt(_startDate)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => _pickTime(isStart: true),
-                              child: InputDecorator(
-                                decoration: InputDecoration(
-                                  labelText: 'Time',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  prefixIcon: const Icon(
-                                    Icons.access_time_outlined,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(_fmtTime(_startTime)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildDateTimeRow(isStart: true, error: _startDateError),
                       const SizedBox(height: 14),
 
+                      // ── End date & time ──────────────────────────────────
                       _SectionLabel(
                         label: 'End Date & Time',
                         color: Colors.black,
                       ),
                       const SizedBox(height: 8),
-                      Row(
+                      _buildDateTimeRow(isStart: false, error: _endDateError),
+                      const SizedBox(height: 14),
+
+                      // ── Location ─────────────────────────────────────────
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => _pickDate(isStart: false),
-                              child: InputDecorator(
-                                decoration: InputDecoration(
-                                  labelText: 'Date',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  prefixIcon: const Icon(
-                                    Icons.calendar_today_outlined,
+                          TextFormField(
+                            controller: _locationController,
+                            decoration: InputDecoration(
+                              labelText: 'Location',
+                              hintText: 'Type an address or pick on map',
+                              prefixIcon: Icon(
+                                _pickedLocation != null
+                                    ? Icons.location_pin
+                                    : Icons.location_on_outlined,
+                                color: _locationError != null
+                                    ? Colors.redAccent
+                                    : _pickedLocation != null
+                                    ? const Color(0xFF84DCC6)
+                                    : null,
+                              ),
+                              labelStyle: _locationError != null
+                                  ? const TextStyle(color: Colors.redAccent)
+                                  : null,
+                              enabledBorder: _locationError != null
+                                  ? OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.redAccent,
+                                        width: 1.5,
+                                      ),
+                                    )
+                                  : null,
+                              focusedBorder: _locationError != null
+                                  ? OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.redAccent,
+                                        width: 1.5,
+                                      ),
+                                    )
+                                  : null,
+                              suffixIcon: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_pickedLocation != null)
+                                    IconButton(
+                                      icon: const Icon(Icons.close, size: 18),
+                                      tooltip: 'Clear map pin',
+                                      onPressed: () => setState(
+                                        () => _pickedLocation = null,
+                                      ),
+                                    ),
+                                  IconButton(
+                                    icon: const Icon(Icons.map_outlined),
+                                    tooltip: 'Pick on map',
+                                    onPressed: _pickLocation,
                                   ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(_fmt(_endDate)),
+                                ],
+                              ),
+                              filled: true,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => _pickTime(isStart: false),
-                              child: InputDecorator(
-                                decoration: InputDecoration(
-                                  labelText: 'Time',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  prefixIcon: const Icon(
-                                    Icons.access_time_outlined,
+                          if (_pickedLocation != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.push_pin,
+                                    size: 14,
+                                    color: Color(0xFF84DCC6),
                                   ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Map pin attached',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
-                                child: Text(_fmtTime(_endTime)),
+                                ],
                               ),
                             ),
-                          ),
+                          _errorText(_locationError),
                         ],
                       ),
                       const SizedBox(height: 14),
 
-                      TextFormField(
-                        controller: _locationController,
-                        decoration: InputDecoration(
-                          labelText: 'Location',
-                          hintText: 'Type an address or pick on map',
-                          prefixIcon: Icon(
-                            _pickedLocation != null
-                                ? Icons.location_pin
-                                : Icons.location_on_outlined,
-                            color: _pickedLocation != null
-                                ? const Color(0xFF84DCC6)
-                                : null,
-                          ),
-                          suffixIcon: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_pickedLocation != null)
-                                IconButton(
-                                  icon: const Icon(Icons.close, size: 18),
-                                  tooltip: 'Clear map pin',
-                                  onPressed: () =>
-                                      setState(() => _pickedLocation = null),
-                                ),
-                              IconButton(
-                                icon: const Icon(Icons.map_outlined),
-                                tooltip: 'Pick on map',
-                                onPressed: _pickLocation,
-                              ),
-                            ],
-                          ),
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      if (_pickedLocation != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6, left: 4),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.push_pin,
-                                size: 14,
-                                color: Color(0xFF84DCC6),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Map pin attached',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      const SizedBox(height: 14),
-
+                      // ── Price ────────────────────────────────────────────
                       _field(
                         controller: _priceController,
                         label: 'Price (£)',
@@ -805,16 +938,17 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                         ],
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Enter a price (0 if free)';
+                            return 'Enter a price (use 0 for free events)';
                           }
                           if (double.tryParse(v.trim()) == null) {
-                            return 'Enter a valid number';
+                            return 'Please enter a valid number';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 14),
 
+                      // ── Description ──────────────────────────────────────
                       _field(
                         controller: _descController,
                         label: 'Description (optional)',
@@ -823,7 +957,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                       ),
                       const SizedBox(height: 20),
 
-                      // ── Committee Member Meeting Section ─────────────────────
+                      // ── Committee member meeting section ─────────────────
                       const Divider(),
                       const SizedBox(height: 4),
                       _SectionLabel(
@@ -862,6 +996,10 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                                 _committeeMeetingLocationController.clear();
                                 _committeeMeetingTime = null;
                                 _selectedCommitteeMemberId = null;
+                                // Clear all committee-related errors
+                                _committeeMemberError = null;
+                                _committeeMeetingLocationError = null;
+                                _committeeMeetingTimeError = null;
                               }
                             });
                           },
@@ -878,66 +1016,150 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // ── Member picker ──────────────────────────
+                              // ── Member picker ────────────────────────────
                               if (widget.societyId != null)
                                 _buildCommitteeMemberPicker(),
 
-                              // ── Meeting location ───────────────────────
-                              TextFormField(
-                                controller: _committeeMeetingLocationController,
-                                decoration: InputDecoration(
-                                  labelText: 'Meeting Location',
-                                  hintText: 'e.g. Main entrance, Room 4B…',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  prefixIcon: const Icon(
-                                    Icons.meeting_room_outlined,
+                              // ── Meeting location ─────────────────────────
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TextFormField(
+                                    controller:
+                                        _committeeMeetingLocationController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Meeting Location',
+                                      hintText: 'e.g. Main entrance, Room 4B…',
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.always,
+                                      prefixIcon: Icon(
+                                        Icons.meeting_room_outlined,
+                                        color:
+                                            _committeeMeetingLocationError !=
+                                                null
+                                            ? Colors.redAccent
+                                            : null,
+                                      ),
+                                      labelStyle:
+                                          _committeeMeetingLocationError != null
+                                          ? const TextStyle(
+                                              color: Colors.redAccent,
+                                            )
+                                          : null,
+                                      enabledBorder:
+                                          _committeeMeetingLocationError != null
+                                          ? OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: const BorderSide(
+                                                color: Colors.redAccent,
+                                                width: 1.5,
+                                              ),
+                                            )
+                                          : null,
+                                      focusedBorder:
+                                          _committeeMeetingLocationError != null
+                                          ? OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: const BorderSide(
+                                                color: Colors.redAccent,
+                                                width: 1.5,
+                                              ),
+                                            )
+                                          : null,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
                                   ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
+                                  _errorText(_committeeMeetingLocationError),
+                                ],
                               ),
                               const SizedBox(height: 12),
 
-                              // ── Meeting time ───────────────────────────
-                              InkWell(
-                                onTap: _pickCommitteeMeetingTime,
-                                borderRadius: BorderRadius.circular(12),
-                                child: InputDecorator(
-                                  decoration: InputDecoration(
-                                    labelText: 'Meeting Time',
-                                    floatingLabelBehavior:
-                                        FloatingLabelBehavior.always,
-                                    prefixIcon: const Icon(
-                                      Icons.access_time_outlined,
-                                    ),
-                                    suffixIcon: _committeeMeetingTime != null
-                                        ? IconButton(
-                                            icon: const Icon(
-                                              Icons.close,
-                                              size: 18,
-                                            ),
-                                            tooltip: 'Clear time',
-                                            onPressed: () => setState(
-                                              () =>
-                                                  _committeeMeetingTime = null,
-                                            ),
-                                          )
-                                        : null,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                              // ── Meeting time ─────────────────────────────
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: _pickCommitteeMeetingTime,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: InputDecorator(
+                                      decoration: InputDecoration(
+                                        labelText: 'Meeting Time',
+                                        floatingLabelBehavior:
+                                            FloatingLabelBehavior.always,
+                                        prefixIcon: Icon(
+                                          Icons.access_time_outlined,
+                                          color:
+                                              _committeeMeetingTimeError != null
+                                              ? Colors.redAccent
+                                              : null,
+                                        ),
+                                        labelStyle:
+                                            _committeeMeetingTimeError != null
+                                            ? const TextStyle(
+                                                color: Colors.redAccent,
+                                              )
+                                            : null,
+                                        enabledBorder:
+                                            _committeeMeetingTimeError != null
+                                            ? OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: const BorderSide(
+                                                  color: Colors.redAccent,
+                                                  width: 1.5,
+                                                ),
+                                              )
+                                            : null,
+                                        focusedBorder:
+                                            _committeeMeetingTimeError != null
+                                            ? OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: const BorderSide(
+                                                  color: Colors.redAccent,
+                                                  width: 1.5,
+                                                ),
+                                              )
+                                            : null,
+                                        suffixIcon:
+                                            _committeeMeetingTime != null
+                                            ? IconButton(
+                                                icon: const Icon(
+                                                  Icons.close,
+                                                  size: 18,
+                                                ),
+                                                tooltip: 'Clear time',
+                                                onPressed: () => setState(
+                                                  () => _committeeMeetingTime =
+                                                      null,
+                                                ),
+                                              )
+                                            : null,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _fmtTime(_committeeMeetingTime),
+                                        style: TextStyle(
+                                          color: _committeeMeetingTime == null
+                                              ? (_committeeMeetingTimeError !=
+                                                        null
+                                                    ? Colors.redAccent
+                                                    : Colors.grey.shade500)
+                                              : Colors.black87,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
-                                    _fmtTime(_committeeMeetingTime),
-                                    style: TextStyle(
-                                      color: _committeeMeetingTime == null
-                                          ? Colors.grey.shade500
-                                          : Colors.black87,
-                                    ),
-                                  ),
-                                ),
+                                  _errorText(_committeeMeetingTimeError),
+                                ],
                               ),
                               const SizedBox(height: 4),
                             ],
@@ -1052,9 +1274,7 @@ class _ImagePicker extends StatelessWidget {
               ? DecorationImage(image: MemoryImage(bytes!), fit: BoxFit.cover)
               : null,
         ),
-        child:
-            bytes ==
-                null // ✅ was: file == null
+        child: bytes == null
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
