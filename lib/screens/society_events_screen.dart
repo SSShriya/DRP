@@ -190,7 +190,7 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
       existingCommitteeMeetingTime: existingMeetingTime,
       existingCommitteeMemberId: event['committee_member_id'],
       societyId: _societyId,
-      existingImageUrl: event['image_url'], 
+      existingImageUrl: event['image_url'],
     );
 
     if (result == null) return;
@@ -238,6 +238,8 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
 
   // ── Event card ─────────────────────────────────────────────────────────────
   Widget _eventCard(Map<String, String> event, {bool isPast = false}) {
+    final imageUrl = event['image_url'] ?? '';
+
     return Opacity(
       opacity: isPast ? 0.55 : 1.0,
       child: Card(
@@ -251,17 +253,65 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
             horizontal: 16,
             vertical: 8,
           ),
-          leading: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: (isPast ? Colors.grey : const Color(0xFF84DCC6))
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.calendar_today,
-              color: isPast ? Colors.grey : const Color(0xFF4D5359),
-            ),
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: imageUrl.isNotEmpty
+                // Show event photo if image_url exists
+                ? Image.network(
+                    imageUrl,
+                    width: 52,
+                    height: 52,
+                    fit: BoxFit.cover,
+                    // ── Show icon while loading ──────────────────────────
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color:
+                              (isPast ? Colors.grey : const Color(0xFF84DCC6))
+                                  .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    },
+                    // ── Fallback icon if image fails to load ─────────────
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: (isPast ? Colors.grey : const Color(0xFF84DCC6))
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today,
+                        color: isPast ? Colors.grey : const Color(0xFF4D5359),
+                      ),
+                    ),
+                  )
+                // Fallback icon if no image_url
+                : Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: (isPast ? Colors.grey : const Color(0xFF84DCC6))
+                          .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.calendar_today,
+                      color: isPast ? Colors.grey : const Color(0xFF4D5359),
+                    ),
+                  ),
           ),
           title: Text(
             event['title']!,
