@@ -181,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         // BACKGROUND IMAGE
         Positioned.fill(
           child: Opacity(
-            opacity: 0.2,
+            opacity: 0.15,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 image: DecorationImage(
