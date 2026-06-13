@@ -88,8 +88,9 @@ class MatchService {
       final currentUserAccepted = isUser1 ? user1Accepted : user2Accepted;
       if (currentUserAccepted != null ||
           user1IsSociety == true ||
-          user2IsSociety == true)
+          user2IsSociety == true) {
         continue;
+      }
 
       final otherUserData = isUser1
           ? row['user2'] as Map<String, dynamic>
