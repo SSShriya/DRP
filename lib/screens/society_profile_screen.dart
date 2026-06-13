@@ -31,19 +31,14 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🟠 SOCIETYPROFILESCREEN: initState');
     _loadProfile();
   }
 
   @override
   void dispose() {
-    debugPrint(
-      '🟠 SOCIETYPROFILESCREEN: dispose called, _disposed=$_disposed, mounted=$mounted',
-    );
     _disposed = true;
     _aboutController.dispose();
     super.dispose();
-    debugPrint('🟠 SOCIETYPROFILESCREEN: dispose finished');
   }
 
   // ── Load ───────────────────────────────────────────────────────────────────
@@ -52,7 +47,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
     setState(() => _isLoading = true);
     try {
       _societyId = await loadUserId();
-      debugPrint('🟠 SOCIETYPROFILESCREEN: _loadProfile societyId=$_societyId');
       if (_societyId.isEmpty || _disposed) return;
 
       final socData = await supabase
@@ -77,7 +71,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
       }
     } catch (e) {
       if (_disposed || !mounted) return;
-      debugPrint('🟠 SOCIETYPROFILESCREEN: Error loading society profile: $e');
       if (e.toString().contains('User session not found')) return;
       _snack('Failed to load profile.');
     } finally {
@@ -190,7 +183,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
           .eq('id', _societyId);
     } catch (e) {
       if (_disposed) return;
-      debugPrint('🟠 SOCIETYPROFILESCREEN: Error updating can_message: $e');
     }
   }
 
@@ -258,7 +250,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
 
   // ── Logout ─────────────────────────────────────────────────────────────────
   Future<void> _logout() async {
-    debugPrint('🔴 LOGOUT: Button pressed, showing dialog');
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -283,27 +274,17 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
       ),
     );
 
-    debugPrint(
-      '🔴 LOGOUT: Dialog closed, confirmed=$confirmed, mounted=$mounted, _disposed=$_disposed',
-    );
 
     if (confirmed != true) {
-      debugPrint('🔴 LOGOUT: Cancelled by user');
       return;
     }
 
     try {
-      debugPrint('🔴 LOGOUT: Calling supabase.auth.signOut()');
       await supabase.auth.signOut();
-      debugPrint('🔴 LOGOUT: signOut() returned');
-      debugPrint('🔴 LOGOUT: Calling SessionManager.clearSession()');
-
       await SessionManager.clearSession();
-      debugPrint('🔴 LOGOUT: clearSession() done');
 
       // auth listener in main.dart handles navigation
     } catch (e) {
-      debugPrint('🔴 LOGOUT: Error during logout: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -314,7 +295,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
       }
     }
 
-    debugPrint('🔴 LOGOUT: _logout() function fully completed');
   }
 
   void _snack(String msg) {
