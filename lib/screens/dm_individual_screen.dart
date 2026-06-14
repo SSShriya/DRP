@@ -256,6 +256,9 @@ class _DMScreenState extends State<DMScreen> {
         initialLocation: parsed.location == 'Not specified'
             ? null
             : parsed.location,
+        // ── NEW: restore the map pin if the message already has coords ──
+        initialLat: parsed.lat,
+        initialLng: parsed.lng,
       ),
     );
     if (result == null) return;

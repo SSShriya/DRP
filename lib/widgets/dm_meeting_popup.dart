@@ -1,16 +1,22 @@
+import 'package:drp/widgets/pick_location_map.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 
 class DMMeetingPopup extends StatefulWidget {
   final String? initialDate;
   final String? initialTime;
   final String? initialLocation;
+  final double? initialLat;
+  final double? initialLng;
 
   const DMMeetingPopup({
     super.key,
     this.initialDate,
     this.initialTime,
     this.initialLocation,
+    this.initialLat,
+    this.initialLng,
   });
 
   @override
@@ -18,10 +24,13 @@ class DMMeetingPopup extends StatefulWidget {
 }
 
 class _DMMeetingPopupState extends State<DMMeetingPopup> {
+  static const _purple = Color(0xFF8789C0);
+
   final TextEditingController _locationController = TextEditingController();
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  LatLng? _pickedLatLng; // null  →  no map pin attached
 
   @override
   void initState() {
@@ -41,6 +50,9 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
     if (widget.initialLocation != null) {
       _locationController.text = widget.initialLocation!;
     }
+    if (widget.initialLat != null && widget.initialLng != null) {
+      _pickedLatLng = LatLng(widget.initialLat!, widget.initialLng!);
+    }
   }
 
   @override
@@ -49,62 +61,81 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
     super.dispose();
   }
 
+  // ── Pickers ──────────────────────────────────────────────────────────────
+
   Future<void> _pickDate() async {
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0XFF8789C0),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Color(0XFF222222),
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: _purple,
+            onPrimary: Colors.white,
+            surface: Colors.white,
+            onSurface: Color(0xFF222222),
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
-
     if (picked != null && picked != _selectedDate) {
       setState(() => _selectedDate = picked);
     }
   }
 
   Future<void> _pickTime() async {
-    final TimeOfDay? picked = await showTimePicker(
+    final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0XFF8789C0),
-              onSurface: Color(0XFF222222),
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: _purple,
+            onSurface: Color(0xFF222222),
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
-
     if (picked != null && picked != _selectedTime) {
       setState(() => _selectedTime = picked);
     }
   }
 
+  /// Opens the full-screen map picker and stores the result.
+  Future<void> _pickLocation() async {
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PickLocationMap(initialLocation: _pickedLatLng),
+      ),
+    );
+    if (result != null) {
+      setState(() {
+        _pickedLatLng = result;
+        // Clear any manual text so the coords are the source of truth,
+        // but only if the field is currently empty.
+        if (_locationController.text.trim().isEmpty) {
+          _locationController.text =
+              '${result.latitude.toStringAsFixed(5)}, '
+              '${result.longitude.toStringAsFixed(5)}';
+        }
+      });
+    }
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    // Determine validation status to drive UI changes dynamically
     final bool isFormValid = _selectedDate != null && _selectedTime != null;
 
     final String dateButtonText = _selectedDate != null
         ? DateFormat('EEEE, MMM d, yyyy').format(_selectedDate!)
-        : 'Choose Date *'; // Appended asterisk for required hint
+        : 'Choose Date *';
 
     final String timeButtonText = _selectedTime != null
         ? _selectedTime!.format(context)
@@ -113,13 +144,13 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header Row
+              // ── Header ───────────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -129,7 +160,7 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                       fontFamily: 'Lora',
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0XFF8789C0),
+                      color: _purple,
                     ),
                   ),
                   IconButton(
@@ -141,7 +172,7 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
               const Divider(),
               const SizedBox(height: 12),
 
-              // 1. Date Selector Button
+              // ── Date ─────────────────────────────────────────────────────
               const Text(
                 'Date *',
                 style: TextStyle(
@@ -153,17 +184,14 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
               const SizedBox(height: 6),
               OutlinedButton.icon(
                 onPressed: _pickDate,
-                icon: const Icon(
-                  Icons.calendar_month,
-                  color: Color(0XFF8789C0),
-                ),
+                icon: const Icon(Icons.calendar_month, color: _purple),
                 label: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     dateButtonText,
                     style: TextStyle(
                       color: _selectedDate != null
-                          ? const Color(0XFF222222)
+                          ? const Color(0xFF222222)
                           : Colors.grey[600],
                       fontWeight: _selectedDate != null
                           ? FontWeight.w500
@@ -183,13 +211,13 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                   side: BorderSide(
                     color: _selectedDate != null
                         ? Colors.grey[400]!
-                        : const Color(0XFF8789C0).withValues(alpha: 0.5),
+                        : _purple.withValues(alpha: 0.5),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 2. Time Selector Button
+              // ── Time ─────────────────────────────────────────────────────
               const Text(
                 'Time *',
                 style: TextStyle(
@@ -201,10 +229,7 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
               const SizedBox(height: 6),
               OutlinedButton.icon(
                 onPressed: _pickTime,
-                icon: const Icon(
-                  Icons.access_time_filled,
-                  color: Color(0XFF8789C0),
-                ),
+                icon: const Icon(Icons.access_time_filled, color: _purple),
                 label: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -212,7 +237,7 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                     style: TextStyle(
                       fontFamily: 'Bitter',
                       color: _selectedTime != null
-                          ? const Color(0XFF222222)
+                          ? const Color(0xFF222222)
                           : Colors.grey[600],
                       fontWeight: _selectedTime != null
                           ? FontWeight.w500
@@ -231,13 +256,13 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                   side: BorderSide(
                     color: _selectedTime != null
                         ? Colors.grey[400]!
-                        : const Color(0XFF8789C0).withValues(alpha: 0.5),
+                        : _purple.withValues(alpha: 0.5),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 3. Location Input Field
+              // ── Location ─────────────────────────────────────────────────
               const Text(
                 'Location (Optional)',
                 style: TextStyle(
@@ -247,31 +272,79 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                 ),
               ),
               const SizedBox(height: 6),
+
+              // Text field
               TextField(
                 controller: _locationController,
                 decoration: InputDecoration(
                   hintText: 'Enter a venue or postcode...',
                   hintStyle: const TextStyle(fontFamily: 'Bitter'),
-                  prefixIcon: const Icon(
-                    Icons.location_on,
-                    color: Color(0XFF8789C0),
+                  prefixIcon: Icon(
+                    _pickedLatLng != null
+                        ? Icons.location_pin
+                        : Icons.location_on,
+                    color: _pickedLatLng != null
+                        ? const Color(0xFF84DCC6)
+                        : _purple,
                   ),
+                  // Clear-pin button appears once a pin is attached
+                  suffixIcon: _pickedLatLng != null
+                      ? IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          tooltip: 'Remove map pin',
+                          onPressed: () => setState(() => _pickedLatLng = null),
+                        )
+                      : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: const Color(0XFF8789C0)),
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
+              const SizedBox(height: 8),
+
+              // "Pick on Map" button — sits directly below the text field
+              OutlinedButton.icon(
+                onPressed: _pickLocation,
+                icon: Icon(
+                  Icons.map_outlined,
+                  size: 18,
+                  color: _pickedLatLng != null
+                      ? const Color(0xFF409A83)
+                      : _purple,
+                ),
+                label: Text(
+                  _pickedLatLng != null ? 'Map pin attached ✓' : 'Pick on Map',
+                  style: TextStyle(
+                    fontFamily: 'Bitter',
+                    fontSize: 13,
+                    color: _pickedLatLng != null
+                        ? const Color(0xFF409A83)
+                        : _purple,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  side: BorderSide(
+                    color: _pickedLatLng != null
+                        ? const Color(0xFF84DCC6)
+                        : _purple.withValues(alpha: 0.4),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 24),
 
-              // Action Confirmation Button
+              // ── Confirm ───────────────────────────────────────────────────
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  // Dynamic color tuning based on complete status
-                  backgroundColor: isFormValid
-                      ? const Color(0XFF8789C0)
-                      : Colors.grey[300],
+                  backgroundColor: isFormValid ? _purple : Colors.grey[300],
                   foregroundColor: isFormValid
                       ? Colors.white
                       : Colors.grey[600],
@@ -282,7 +355,6 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                   elevation: isFormValid ? 2 : 0,
                 ),
                 onPressed: () {
-                  // Hard stop: Guard clause evaluating missing selections
                   if (!isFormValid) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -300,19 +372,16 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                         duration: const Duration(seconds: 2),
                       ),
                     );
-                    return; // Terminates execution out early
+                    return;
                   }
 
-                  // Safe formatting execution block
-                  final String finalDate = DateFormat(
-                    'yyyy-MM-dd',
-                  ).format(_selectedDate!);
-                  final String finalTime = _selectedTime!.format(context);
-
                   Navigator.pop(context, {
-                    'date': finalDate,
-                    'time': finalTime,
+                    'date': DateFormat('yyyy-MM-dd').format(_selectedDate!),
+                    'time': _selectedTime!.format(context),
                     'location': _locationController.text.trim(),
+                    // null when no pin was placed — buildInvitePayload handles this
+                    'lat': _pickedLatLng?.latitude,
+                    'lng': _pickedLatLng?.longitude,
                   });
                 },
                 child: Text(
