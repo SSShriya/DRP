@@ -398,8 +398,22 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
             child: ClipPath(
               clipper: ScallopedClipper(),
               child: AppBar(
-                title: const Text('Profile'),
-                backgroundColor: const Color(0xFF84DCC6),
+                title: const Text(
+                  'Profile',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 25,
+                    fontFamily: 'Lora',
+                  ),
+                ),
+                flexibleSpace: Opacity(
+                  opacity: 0.6,
+                  child: Image(
+                    image: AssetImage('assets/images/teal_gingham.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                centerTitle: true,
                 foregroundColor: const Color(0xFF222222),
                 elevation: 0,
                 automaticallyImplyLeading: false,
@@ -533,7 +547,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
 
                         // ── Committee members ────────────────────────────────
                         if (_canContact) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 10),
                           Card(
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -541,7 +555,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                             ),
                             color: const Color(0xFFEEDDEE),
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -638,7 +652,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                           ),
                           color: const Color(0x5F79C99E),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(10),
                             child: CustomPaint(
                               foregroundPainter: StitchedBorderPainter(
                                 stitchColor: Colors.white.withValues(
@@ -647,8 +661,8 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                                 strokeWidth: 2.2,
                                 dashLength: 7.0,
                                 gapLength: 8.0,
-                                borderRadius: 10.0,
-                                inset: 6.0,
+                                borderRadius: 16.0,
+                                inset: 0.2,
                               ),
 
                               child: Column(
@@ -708,26 +722,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                             backgroundColor: const Color(0xFFfd5757),
                             stitchColor: Colors.white,
                           ),
-                          // child: ElevatedButton(
-                          //   onPressed: _isLoading ? null : _logout,
-                          //   style: ElevatedButton.styleFrom(
-                          //     backgroundColor: const Color(0xFFfd5757),
-                          //     foregroundColor: Colors.white,
-                          //     padding: const EdgeInsets.all(16),
-                          //     shape: RoundedRectangleBorder(
-                          //       borderRadius: BorderRadius.circular(12),
-                          //     ),
-                          //     elevation: 0,
-                          //   ),
-                          //   child: const Text(
-                          //     'LOG OUT',
-                          //     style: TextStyle(
-                          //       fontSize: 16,
-                          //       fontWeight: FontWeight.bold,
-                          //       letterSpacing: 1.2,
-                          //     ),
-                          //   ),
-                          // ),
                         ),
                         const SizedBox(height: 16),
                       ],

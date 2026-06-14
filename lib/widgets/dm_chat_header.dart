@@ -33,40 +33,12 @@ class DmChatHeader extends StatelessWidget implements PreferredSizeWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => Scaffold(
-                appBar: PreferredSize(
-                  preferredSize: const Size.fromHeight(kToolbarHeight + 10),
-                  child: ClipPath(
-                    clipper: ScallopedClipper(),
-                    child: AppBar(
-                      // backgroundColor: _accentColor,
-                      // foregroundColor: Colors.white,
-                      title: Text(
-                        card.title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 25,
-                          fontFamily: 'Lora',
-                        ),
-                      ),
-                      flexibleSpace: Opacity(
-                        opacity: 0.6,
-                        child: Image(
-                          image: AssetImage('assets/images/teal_gingham.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                body: chat.isSociety
-                    ? SocietyInfoScreen(
-                        societyId: chat.matchCard.otherUserId,
-                        eventId: chat.matchCard.eventId,
-                      )
-                    : UserProfileCard(card: card, accepted: true),
-              ),
+              builder: (_) => chat.isSociety
+                  ? SocietyInfoScreen(
+                      societyId: chat.matchCard.otherUserId,
+                      eventId: chat.matchCard.eventId,
+                    )
+                  : UserProfileCard(card: card, accepted: true),
             ),
           );
         },

@@ -1,3 +1,4 @@
+import 'package:drp/tools/scalloped_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:drp/services/supabase_client.dart';
@@ -355,27 +356,50 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0F6),
-      appBar: AppBar(
-        title: const Text('Events'),
-        backgroundColor: const Color(0xFF84DCC6),
-        foregroundColor: const Color(0xFF222222),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF222222)),
-                ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+        child: ClipPath(
+          clipper: ScallopedClipper(),
+          child: AppBar(
+            title: const Text(
+              'Events',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 25,
+                fontFamily: 'Lora',
               ),
             ),
-        ],
+            foregroundColor: const Color(0xFF222222),
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            flexibleSpace: Opacity(
+              opacity: 0.6,
+              child: Image(
+                image: AssetImage('assets/images/teal_gingham.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            centerTitle: true,
+            actions: [
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF222222),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isLoading ? null : _addNewEvent,
         backgroundColor: const Color(0xFF84DCC6),
