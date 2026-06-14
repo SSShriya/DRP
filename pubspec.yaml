@@ -36,6 +36,8 @@ flutter:
     - assets/textures/linen.jpg
     - assets/textures/bg_texture.jpg
     - assets/images/teal_gingham.png
+    - assets/images/yellow_gingham.png
+    - assets/images/pink_gingham.png
   fonts:
     - family: Montserrat
       fonts:
