@@ -14,12 +14,30 @@ Future<String> loadUserId() async {
   return id;
 }
 
+DateTime parseDbTimestamp(String raw) {
+  // DateTime.parse handles the 'Z' suffix correctly.
+  // For strings WITHOUT 'Z', we must declare them UTC manually.
+  final dt = DateTime.parse(raw);
+  return dt.isUtc
+      ? dt.toLocal()
+      : DateTime.utc(
+          dt.year,
+          dt.month,
+          dt.day,
+          dt.hour,
+          dt.minute,
+          dt.second,
+          dt.millisecond,
+        ).toLocal();
+}
+
 String formatGroupDate(DateTime dt) {
+  final local = dt.toLocal();
   final now = DateTime.now();
   bool sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
-  if (sameDay(dt, now)) return 'Today';
-  if (sameDay(dt, now.subtract(const Duration(days: 1)))) return 'Yesterday';
+  if (sameDay(local, now)) return 'Today';
+  if (sameDay(local, now.subtract(const Duration(days: 1)))) return 'Yesterday';
   const months = [
     'Jan',
     'Feb',
@@ -34,11 +52,13 @@ String formatGroupDate(DateTime dt) {
     'Nov',
     'Dec',
   ];
-  return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';
+  return '${local.day.toString().padLeft(2, '0')} ${months[local.month - 1]} ${local.year}';
 }
 
-String formatTime(DateTime dt) =>
-    '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+String formatTime(DateTime dt) {
+  final local = dt.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
 
 String formatDate(String raw) {
   try {

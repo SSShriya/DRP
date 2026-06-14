@@ -90,7 +90,7 @@ class _DMScreenState extends State<DMScreen> {
           id: row['message_id']?.toString() ?? '',
           text: content,
           fromMe: row['sender_id'] == _myUserId,
-          createdAt: DateTime.parse(row['created_at'] as String),
+          createdAt: DateTime.parse(row['created_at'] as String).toLocal(),
           isInvitation: isInvite,
           invitationStatus: isInvite ? row['invitation_status'] as bool? : null,
           lastEditedBy: row['last_edited_by'] as String?,
@@ -208,7 +208,12 @@ class _DMScreenState extends State<DMScreen> {
 
     setState(() {
       _messages.add(
-        DmMessage(id: id, text: text, fromMe: true, createdAt: DateTime.now()),
+        DmMessage(
+          id: id,
+          text: text,
+          fromMe: true,
+          createdAt: DateTime.now().toLocal(),
+        ),
       );
       _messageKeys.add(GlobalKey());
     });
@@ -276,7 +281,7 @@ class _DMScreenState extends State<DMScreen> {
         text: payload,
         fromMe: msg.fromMe,
         isInvitation: true,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toLocal(),
         lastEditedBy: _myUserId,
       );
     });
