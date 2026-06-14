@@ -1232,6 +1232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         border: InputBorder.none,
         contentPadding: EdgeInsets.all(10),
+        enabledBorder: InputBorder.none,
       ),
       validator: required
           ? (value) => (value == null || value.trim().isEmpty)
