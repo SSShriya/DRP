@@ -13,7 +13,9 @@ import '../services/event_service.dart';
 import '../main.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onGoToEvents;
+  const HomeScreen({super.key, this.onGoToEvents});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -322,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
           appBar: AppBar(
             title: Text(
-              'Welcome Back!',
+              'Welcome!',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 25,
@@ -420,26 +422,93 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                     ],
                   ),
                 ),
-                SizedBox(
-                  height: 170,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: _interestedEvents.length,
-                    itemBuilder: (_, i) => InteractiveCard(
-                      card: _interestedEvents[i],
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EventMatchesScreen(
-                            allEvents: _interestedEvents,
-                            event: _interestedEvents[i],
+                _interestedEvents.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF84DCC6),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.event_outlined,
+                                size: 36,
+                                color: Color(0xFF84DCC6),
+                              ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                "You haven't joined any events yet!",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Merriweather',
+                                  fontSize: 14,
+                                  color: Color(0xFF444444),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              ElevatedButton.icon(
+                                onPressed: widget.onGoToEvents,
+                                icon: const Icon(
+                                  Icons.explore_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Browse Events',
+                                  style: TextStyle(
+                                    fontFamily: 'Merriweather',
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF84DCC6),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : SizedBox(
+                        height: 170,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          itemCount: _interestedEvents.length,
+                          itemBuilder: (_, i) => InteractiveCard(
+                            card: _interestedEvents[i],
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EventMatchesScreen(
+                                  allEvents: _interestedEvents,
+                                  event: _interestedEvents[i],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
                   child: Column(
@@ -470,7 +539,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 if (_pendingMatches.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: Text("You've reviewed everyone!!")),
+                    child: Center(
+                      child: Text("No one to review yet - check again later!"),
+                    ),
                   )
                 else ...[
                   // ── Events WITH matches ──
