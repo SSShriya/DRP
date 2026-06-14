@@ -157,7 +157,7 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                   const Text(
                     'Suggest a Meeting',
                     style: TextStyle(
-                      fontFamily: 'Lora',
+                      fontFamily: 'Montserrat',
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: _purple,

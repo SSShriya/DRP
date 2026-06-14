@@ -25,7 +25,7 @@ class ChatSection extends StatelessWidget {
     return ExpansionTile(
       title: Text(
         title,
-        style: const TextStyle(fontFamily: 'Lora', fontWeight: FontWeight.bold),
+        style: const TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold),
       ),
       initiallyExpanded: currentChats,
       children: [

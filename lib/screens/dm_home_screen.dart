@@ -253,7 +253,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 25,
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
               ),
             ),
             flexibleSpace: Opacity(

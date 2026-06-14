@@ -842,7 +842,7 @@ class _CreateEventFormState extends State<_CreateEventForm> {
                 _isEditing ? 'EDIT EVENT' : 'NEW EVENT',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontFamily: 'Lora',
+                  fontFamily: 'Montserrat',
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

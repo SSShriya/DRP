@@ -450,7 +450,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                     Text(
                       _societyName ?? 'UNKNOWN',
                       style: const TextStyle(
-                        fontFamily: 'Lora',
+                        fontFamily: 'Montserrat',
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF222222),

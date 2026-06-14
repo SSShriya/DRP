@@ -243,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                     Text(
                       'Notifications',
                       style: const TextStyle(
-                        fontFamily: 'Lora',
+                        fontFamily: 'Montserrat',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -360,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 25,
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
               ),
             ),
             flexibleSpace: Opacity(
@@ -437,7 +437,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       Text(
                         "Your Upcoming Events",
                         style: const TextStyle(
-                          fontFamily: 'Lora',
+                          fontFamily: 'Montserrat',
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -549,7 +549,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       Text(
                         "Discover More People",
                         style: const TextStyle(
-                          fontFamily: 'Lora',
+                          fontFamily: 'Montserrat',
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),

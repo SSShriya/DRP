@@ -81,7 +81,7 @@ class CongratsPopup extends StatelessWidget {
 
             const SizedBox(height: 12),
             _button(
-              label: 'Next Match',
+              label: 'Next Connection',
               onPressed: () => Navigator.pop(context),
             ),
             const SizedBox(height: 12),

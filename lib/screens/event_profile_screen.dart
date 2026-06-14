@@ -164,7 +164,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
             const Text(
               'Committee Member Available',
               style: TextStyle(
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: Colors.black87,
@@ -327,7 +327,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
                       Text(
                         widget.card.title,
                         style: const TextStyle(
-                          fontFamily: 'Lora',
+                          fontFamily: 'Montserrat',
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -434,7 +434,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
                   child: Text(
                     'More About $societyName',
                     style: const TextStyle(
-                      fontFamily: 'Lora',
+                      fontFamily: 'Montserrat',
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                       color: Colors.black87,
@@ -450,7 +450,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
             const Text(
               'Description',
               style: TextStyle(
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
                 color: Colors.black87,
@@ -491,7 +491,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
                     ? const Text(
                         'Cancel Registration',
                         style: TextStyle(
-                          fontFamily: 'Lora',
+                          fontFamily: 'Montserrat',
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: Colors.black87,
@@ -500,7 +500,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
                     : const Text(
                         "I'm going!",
                         style: TextStyle(
-                          fontFamily: 'Lora',
+                          fontFamily: 'Montserrat',
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: Colors.black87,

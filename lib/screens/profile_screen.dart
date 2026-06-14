@@ -315,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const Text(
           'Interest Photos',
           style: TextStyle(
-            fontFamily: 'Lora',
+            fontFamily: 'Montserrat',
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
@@ -435,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     displayName,
                     style: const TextStyle(
-                      fontFamily: 'Lora',
+                      fontFamily: 'Montserrat',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF4D5359),
@@ -814,7 +814,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 25,
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
               ),
             ),
             flexibleSpace: Opacity(
@@ -914,7 +914,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Text(
                             'Your Information',
                             style: const TextStyle(
-                              fontFamily: 'Lora',
+                              fontFamily: 'Montserrat',
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
@@ -962,7 +962,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Text(
                                   'Your Interests',
                                   style: const TextStyle(
-                                    fontFamily: 'Lora',
+                                    fontFamily: 'Montserrat',
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
@@ -1083,7 +1083,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const Text(
                             'Bio',
                             style: TextStyle(
-                              fontFamily: 'Lora',
+                              fontFamily: 'Montserrat',
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,

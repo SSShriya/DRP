@@ -111,7 +111,7 @@ class _EventsScreenState extends State<EventsScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 25,
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
               ),
             ),
             flexibleSpace: Opacity(
@@ -185,7 +185,7 @@ class _EventsScreenState extends State<EventsScreen> {
                             Text(
                               'All Events',
                               style: const TextStyle(
-                                fontFamily: 'Lora',
+                                fontFamily: 'Montserrat',
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),

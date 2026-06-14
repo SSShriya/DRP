@@ -315,7 +315,7 @@ class _DMScreenState extends State<DMScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Prompts', style: TextStyle(fontFamily: 'Lora')),
+        title: const Text('Prompts', style: TextStyle(fontFamily: 'Montserrat')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

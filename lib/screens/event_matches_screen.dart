@@ -166,7 +166,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
             const Text(
               'Committee Member Available',
               style: TextStyle(
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: Colors.black87,
@@ -860,7 +860,7 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 25,
-            fontFamily: 'Lora',
+            fontFamily: 'Montserrat',
           ),
         ),
         flexibleSpace: Opacity(

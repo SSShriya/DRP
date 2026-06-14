@@ -395,7 +395,7 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
             const Text(
               'UPCOMING EVENTS',
               style: TextStyle(
-                fontFamily: 'Lora',
+                fontFamily: 'Montserrat',
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF222222),
