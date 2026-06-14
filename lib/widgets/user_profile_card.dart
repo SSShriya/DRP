@@ -934,7 +934,13 @@ class _Card extends StatelessWidget {
           color: color ?? Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: child,
+        child: DefaultTextStyle.merge(
+          style: const TextStyle(
+            color: Colors.black,
+            decoration: TextDecoration.none,
+          ),
+          child: child,
+        ),
       ),
     );
   }
