@@ -73,6 +73,7 @@ class MatchService {
 
     // ── Track which events yielded at least one match card ─────────────────
     final eventsWithMatches = <String>{};
+    final eventsUserAlreadyAcceptedCommittee = <String>{};
     final matches = <(MatchCard, int)>[];
 
     for (final row in rows as List) {
@@ -89,11 +90,15 @@ class MatchService {
       final isUser1 = currentUserId == user1Id;
       final currentUserAccepted = isUser1 ? user1Accepted : user2Accepted;
 
-      if (currentUserAccepted != null ||
-          user1IsSociety == true ||
-          user2IsSociety == true) {
+      // ── If this is a society row, check if user has already accepted ──
+      if (user1IsSociety == true || user2IsSociety == true) {
+        if (currentUserAccepted == true) {
+          eventsUserAlreadyAcceptedCommittee.add(eventId);
+        }
         continue;
       }
+
+      if (currentUserAccepted != null) continue;
 
       final otherUserData = isUser1
           ? row['user2'] as Map<String, dynamic>
@@ -162,8 +167,13 @@ class MatchService {
     }
 
     // ── Committee cards for events with no matches ─────────────────────────
+    // Exclude events where the user has already accepted the committee card
     final eventsWithoutMatches = interestedEventIds
-        .where((id) => !eventsWithMatches.contains(id))
+        .where(
+          (id) =>
+              !eventsWithMatches.contains(id) &&
+              !eventsUserAlreadyAcceptedCommittee.contains(id),
+        )
         .toList();
 
     if (eventsWithoutMatches.isNotEmpty) {
@@ -207,7 +217,7 @@ class MatchService {
         final formattedDate = startDayRaw != null
             ? DateFormat('d MMM yyyy').format(DateTime.parse(startDayRaw))
             : '';
-        // Add at the end with score 0 so they appear after real matches
+
         matches.add((
           MatchCard(
             currentUserId: currentUserId,
@@ -218,7 +228,7 @@ class MatchService {
             bio: [
               meetingTime,
               if (formattedDate.isNotEmpty) formattedDate,
-            ].join(' · '), // e.g. "14:00 · 14 Jun 2026"
+            ].join(' · '),
             eventId: eventId,
             eventName: eventName,
             yearGroup: '',
@@ -227,10 +237,10 @@ class MatchService {
             imageUrl: memberAvatar,
             isCommitteeCard: true,
             societyName: societyName,
-            interestPhotos: {},
             societyId: societyId,
+            interestPhotos: {},
           ),
-          0, // score 0 so committee cards always appear last
+          0,
         ));
       }
     }
