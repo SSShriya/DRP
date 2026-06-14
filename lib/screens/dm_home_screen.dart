@@ -1,5 +1,5 @@
 import 'package:drp/services/utils.dart';
-
+import 'package:drp/tools/scalloped_clipper.dart';
 import '../main.dart';
 import 'package:drp/widgets/chat_section.dart';
 import 'package:flutter/material.dart';
@@ -213,22 +213,28 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
         Scaffold(
           // backgroundColor: const Color(0xFFF5F0F6),
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            foregroundColor: const Color(0XFF222222),
-            elevation: 0,
-            title: const Text(
-              'Messages',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 25,
-                fontFamily: 'Lora',
-              ),
-            ),
-            flexibleSpace: Opacity(
-              opacity: 0.6,
-              child: Image(
-                image: AssetImage('assets/images/teal_gingham.png'),
-                fit: BoxFit.cover,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+            child: ClipPath(
+              clipper: ScallopedClipper(),
+              child: AppBar(
+                foregroundColor: const Color(0XFF222222),
+                elevation: 0,
+                title: const Text(
+                  'Messages',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 25,
+                    fontFamily: 'Lora',
+                  ),
+                ),
+                flexibleSpace: Opacity(
+                  opacity: 0.6,
+                  child: Image(
+                    image: AssetImage('assets/images/teal_gingham.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
           ),
