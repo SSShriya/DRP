@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/dm_message.dart';
 import '../services/utils.dart';
 
@@ -88,7 +90,8 @@ class DmInvitationCard extends StatelessWidget {
 
   Widget _buildBody(
     BuildContext context,
-    ({String date, String time, String location}) parsed,
+    ({String date, String time, String location, double? lat, double? lng})
+    parsed,
     bool isPending,
     bool shouldShowButtons,
   ) {
@@ -107,10 +110,14 @@ class DmInvitationCard extends StatelessWidget {
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 4),
-          Text(
-            '📍 Location: ${parsed.location}',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+
+          // ── Location row with optional map chip ──────────────────────────
+          _LocationRow(
+            location: parsed.location,
+            lat: parsed.lat,
+            lng: parsed.lng,
           ),
+
           const Divider(height: 16),
           if (isPending)
             _buildPendingActions(shouldShowButtons)
@@ -208,6 +215,158 @@ class DmInvitationCard extends StatelessWidget {
             color: accepted ? _accentDark : Colors.red,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Location row ──────────────────────────────────────────────────────────────
+
+class _LocationRow extends StatelessWidget {
+  final String location;
+  final double? lat;
+  final double? lng;
+
+  const _LocationRow({
+    required this.location,
+    required this.lat,
+    required this.lng,
+  });
+
+  bool get _hasPin => lat != null && lng != null;
+
+  void _openMap(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            _ReadOnlyLocationMap(centre: LatLng(lat!, lng!), label: location),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            '📍 Location: $location',
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+          ),
+        ),
+        // Only show the chip when real coordinates exist
+        if (_hasPin) ...[
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => _openMap(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _accentColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _accentColor, width: 1),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.map_outlined, size: 13, color: _accentDark),
+                  SizedBox(width: 4),
+                  Text(
+                    'View Map',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _accentDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Read-only map screen ──────────────────────────────────────────────────────
+
+class _ReadOnlyLocationMap extends StatelessWidget {
+  final LatLng centre;
+  final String label;
+
+  const _ReadOnlyLocationMap({required this.centre, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    const teal = Color(0xFF84DCC6);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Meeting Location'),
+        backgroundColor: teal,
+        foregroundColor: Colors.white,
+      ),
+      body: Stack(
+        children: [
+          FlutterMap(
+            options: MapOptions(initialCenter: centre, initialZoom: 15),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.drp',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: centre,
+                    width: 48,
+                    height: 48,
+                    child: const Icon(
+                      Icons.location_pin,
+                      size: 48,
+                      color: teal,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // ── Bottom pill ───────────────────────────────────────────────────
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.my_location, size: 16, color: teal),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      label == 'Not specified'
+                          ? '${centre.latitude.toStringAsFixed(5)}, '
+                                '${centre.longitude.toStringAsFixed(5)}'
+                          : label,
+                      style: const TextStyle(fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

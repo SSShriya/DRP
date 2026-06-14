@@ -9,9 +9,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/signup_screen.dart';
 import 'services/supabase_client.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,18 +35,52 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
-  Future<_UserRouteInfo>? _routeFuture;
-  String? _lastUserId;
   late final AppLinks _appLinks;
+  late final StreamSubscription<AuthState> _authSubscription;
+
+  bool _isLoggedIn = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
+
+    _authSubscription = supabase.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.initialSession) {
+        if (mounted) {
+          setState(() {
+            _isLoggedIn = data.session != null;
+            _isInitialized = true;
+          });
+        }
+      } else if (data.event == AuthChangeEvent.signedIn) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const _AppRouter()),
+            (route) => false,
+          );
+        });
+      } else if (data.event == AuthChangeEvent.signedOut) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const SignUpScreen()),
+            (route) => false,
+          );
+        });
+      }
+    });
+
     if (kIsWeb) {
       _handleWebAuthCallback();
     } else {
       _handleIncomingLinks();
     }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
   }
 
   Future<void> _handleWebAuthCallback() async {
@@ -55,7 +92,7 @@ class _MainAppState extends State<MainApp> {
       try {
         await supabase.auth.getSessionFromUrl(uri);
       } catch (e) {
-        debugPrint('Error getting session from URL: $e');
+        debugPrint('MAINAPP: Error getting session from URL: $e');
       }
     }
   }
@@ -89,59 +126,12 @@ class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       navigatorObservers: [routeObserver],
-      home: StreamBuilder<AuthState>(
-        stream: supabase.auth.onAuthStateChange,
-        builder: (context, snapshot) {
-          // ── Still waiting for first event ───────────────────────────
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          final session = snapshot.data?.session;
-          final user =
-              snapshot.data?.session?.user ?? supabase.auth.currentUser;
-
-          // // ── User exists but email not verified ──────────────────────
-          // if (user != null && user.emailConfirmedAt == null) {
-          //   return VerifyEmailScreen(email: user.email ?? '');
-          // }
-
-          // ── No user at all → sign up/login screen ───────────────────
-          if (user == null || session == null) return const SignUpScreen();
-
-          // Only re-fetch if the user changed
-          if (_lastUserId != user.id) {
-            _lastUserId = user.id;
-            _routeFuture = _getUserRouteInfo(user.id);
-          }
-
-          return FutureBuilder<_UserRouteInfo>(
-            future: _routeFuture,
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              final info = snap.data;
-
-              if (info == null || !info.hasCompletedProfile) {
-                return ProfileScreen(isSociety: info?.isSociety ?? false);
-              }
-
-              return info.isSociety ? const SocietyNavBar() : const MainShell();
-            },
-          );
-        },
-      ),
-      // routes: {
-      //   '/signup': (context) => const SignUpScreen(),
-      //   '/home': (context) => const MainShell(),
-      // },
+      // All navigation is handled imperatively via the auth listener above.
+      home: _isInitialized
+          ? (_isLoggedIn ? const _AppRouter() : const SignUpScreen())
+          : const Scaffold(body: Center(child: CircularProgressIndicator())),
     );
   }
 }
@@ -168,17 +158,66 @@ Future<_UserRouteInfo> _getUserRouteInfo(String userId) async {
       if (result != null) {
         final university = result['university'] as String?;
 
-        return _UserRouteInfo(
+        final info = _UserRouteInfo(
           isSociety: result['is_society'] == true,
           hasCompletedProfile:
               university != null && university.trim().isNotEmpty,
         );
+
+        return info;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('_getUserRouteInfo: attempt=$attempt error=$e');
+    }
     if (attempt < 2) {
       await Future.delayed(const Duration(milliseconds: 500));
     }
   }
 
   return const _UserRouteInfo(isSociety: false, hasCompletedProfile: false);
+}
+
+// New widget — extract the FutureBuilder logic out of StreamBuilder
+class _AppRouter extends StatefulWidget {
+  const _AppRouter();
+
+  @override
+  State<_AppRouter> createState() => _AppRouterState();
+}
+
+class _AppRouterState extends State<_AppRouter> {
+  Future<_UserRouteInfo>? _routeFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final userId = supabase.auth.currentUser?.id;
+    if (userId != null) {
+      _routeFuture = _getUserRouteInfo(userId);
+    } else {
+      debugPrint('_APPROUTER: no current user in initState');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_UserRouteInfo>(
+      future: _routeFuture,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final info = snap.data;
+
+        if (info == null || !info.hasCompletedProfile) {
+          return ProfileScreen(isSociety: info?.isSociety ?? false);
+        }
+
+        return info.isSociety ? const SocietyNavBar() : const MainShell();
+      },
+    );
+  }
 }

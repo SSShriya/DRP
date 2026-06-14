@@ -6,22 +6,38 @@ Future<String> loadUserId() async {
   final user = supabase.auth.currentUser;
   if (user != null) return user.id;
 
-  // Fallback to secure storage
   final id = await SessionManager.getUserId();
   if (id == null) {
     await SessionManager.clearSession();
-    throw Exception("User session not found. Please log in again.");
+    return '';
   }
   return id;
 }
 
+DateTime parseDbTimestamp(String raw) {
+  // DateTime.parse handles the 'Z' suffix correctly.
+  // For strings WITHOUT 'Z', we must declare them UTC manually.
+  final dt = DateTime.parse(raw);
+  return dt.isUtc
+      ? dt.toLocal()
+      : DateTime.utc(
+          dt.year,
+          dt.month,
+          dt.day,
+          dt.hour,
+          dt.minute,
+          dt.second,
+          dt.millisecond,
+        ).toLocal();
+}
 
 String formatGroupDate(DateTime dt) {
+  final local = dt.toLocal();
   final now = DateTime.now();
   bool sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
-  if (sameDay(dt, now)) return 'Today';
-  if (sameDay(dt, now.subtract(const Duration(days: 1)))) return 'Yesterday';
+  if (sameDay(local, now)) return 'Today';
+  if (sameDay(local, now.subtract(const Duration(days: 1)))) return 'Yesterday';
   const months = [
     'Jan',
     'Feb',
@@ -36,11 +52,13 @@ String formatGroupDate(DateTime dt) {
     'Nov',
     'Dec',
   ];
-  return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';
+  return '${local.day.toString().padLeft(2, '0')} ${months[local.month - 1]} ${local.year}';
 }
 
-String formatTime(DateTime dt) =>
-    '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+String formatTime(DateTime dt) {
+  final local = dt.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
 
 String formatDate(String raw) {
   try {
@@ -53,26 +71,45 @@ String formatDate(String raw) {
 const String invitePrefix = 'INVITATION_DATA:';
 
 /// Builds the raw INVITATION_DATA string from a result map.
-String buildInvitePayload(Map result) =>
-    '$invitePrefix{'
-    '"date":"${result['date']}",'
-    '"time":"${result['time']}",'
-    '"location":"${result['location'] ?? ''}"'
-    '}';
+/// [result] may optionally contain 'lat' and 'lng' (both double).
+/// Old messages without those fields are still parsed correctly.
+String buildInvitePayload(Map result) {
+  final lat = result['lat'];
+  final lng = result['lng'];
+  final hasCoords = lat != null && lng != null;
 
-/// Extracts date/time/location strings from a raw invite payload.
-({String date, String time, String location}) parseInvitePayload(String text) {
+  return '$invitePrefix{'
+      '"date":"${result['date']}",'
+      '"time":"${result['time']}",'
+      '"location":"${result['location'] ?? ''}"'
+      '${hasCoords ? ',"lat":$lat,"lng":$lng' : ''}'
+      '}';
+}
+
+/// Extracts date / time / location / optional coords from a raw invite payload.
+/// Returns null for lat/lng when the message pre-dates coordinate support.
+({String date, String time, String location, double? lat, double? lng})
+parseInvitePayload(String text) {
   final data = text.replaceFirst(invitePrefix, '');
 
-  String pick(RegExp re) {
+  String pickStr(RegExp re) {
     final m = re.firstMatch(data);
     return m != null ? m.group(1)! : 'Not specified';
   }
 
-  final loc = pick(RegExp(r'"location":"([^"]*)"'));
+  double? pickDouble(RegExp re) {
+    final m = re.firstMatch(data);
+    if (m == null) return null;
+    return double.tryParse(m.group(1)!);
+  }
+
+  final loc = pickStr(RegExp(r'"location":"([^"]*)"'));
   return (
-    date: pick(RegExp(r'"date":"([^"]+)"')),
-    time: pick(RegExp(r'"time":"([^"]+)"')),
+    date: pickStr(RegExp(r'"date":"([^"]+)"')),
+    time: pickStr(RegExp(r'"time":"([^"]+)"')),
     location: loc.isEmpty ? 'Not specified' : loc,
+    // These will be null for any message sent before this update
+    lat: pickDouble(RegExp(r'"lat":([-\d.]+)')),
+    lng: pickDouble(RegExp(r'"lng":([-\d.]+)')),
   );
 }

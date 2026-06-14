@@ -90,7 +90,7 @@ class _DMScreenState extends State<DMScreen> {
           id: row['message_id']?.toString() ?? '',
           text: content,
           fromMe: row['sender_id'] == _myUserId,
-          createdAt: DateTime.parse(row['created_at'] as String),
+          createdAt: DateTime.parse(row['created_at'] as String).toLocal(),
           isInvitation: isInvite,
           invitationStatus: isInvite ? row['invitation_status'] as bool? : null,
           lastEditedBy: row['last_edited_by'] as String?,
@@ -208,7 +208,12 @@ class _DMScreenState extends State<DMScreen> {
 
     setState(() {
       _messages.add(
-        DmMessage(id: id, text: text, fromMe: true, createdAt: DateTime.now()),
+        DmMessage(
+          id: id,
+          text: text,
+          fromMe: true,
+          createdAt: DateTime.now().toLocal(),
+        ),
       );
       _messageKeys.add(GlobalKey());
     });
@@ -256,6 +261,9 @@ class _DMScreenState extends State<DMScreen> {
         initialLocation: parsed.location == 'Not specified'
             ? null
             : parsed.location,
+        // ── NEW: restore the map pin if the message already has coords ──
+        initialLat: parsed.lat,
+        initialLng: parsed.lng,
       ),
     );
     if (result == null) return;
@@ -273,7 +281,7 @@ class _DMScreenState extends State<DMScreen> {
         text: payload,
         fromMe: msg.fromMe,
         isInvitation: true,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toLocal(),
         lastEditedBy: _myUserId,
       );
     });
@@ -394,6 +402,7 @@ class _DMScreenState extends State<DMScreen> {
   // ── Message list ─────────────────────────────
 
   Widget _buildMessageList() {
+    final boxWidth = (MediaQuery.of(context).size.width - 32 - 10) / 2;
     return ListView(
       controller: _scrollController,
       padding: const EdgeInsets.only(bottom: 8),
@@ -415,7 +424,9 @@ class _DMScreenState extends State<DMScreen> {
                 children: [
                   Text(
                     textAlign: TextAlign.center,
-                    widget.chat.isSociety ? "Events You Are Attending:" : "You Are Both Attending:",
+                    widget.chat.isSociety
+                        ? "Events You Are Attending:"
+                        : "You Are Both Attending:",
                     style: const TextStyle(
                       fontFamily: 'Merriweather',
                       fontSize: 14,
@@ -507,94 +518,107 @@ class _DMScreenState extends State<DMScreen> {
           ),
 
         if (!widget.chat.isSociety)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-            child: Row(
-              children: [
-                // 📅 Meeting hint
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD6EAF8), // light blue
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.calendar_today,
-                          size: 24,
-                          color: Color(0xFF2471A3),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Schedule a Meeting',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+          Center(
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 📅 Meeting hint
+                  SizedBox(
+                    width: boxWidth,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD6EAF8),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment
+                            .center, // 👈 centres content vertically
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 24,
+                            color: Color(0xFF2471A3),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Tap the 📅 in the top right to propose a time & place!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: Colors.black54),
-                        ),
-                      ],
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Schedule a Meeting',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Tap the 📅 in the top right to propose a time & place!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: 10),
+                  const SizedBox(width: 10),
 
-                // 💡 Suggestions hint
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF9E7), // light yellow
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.lightbulb_outline,
-                          size: 24,
-                          color: Color(0xFFD4AC0D),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Message Suggestions',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                  // 💡 Suggestions hint
+                  SizedBox(
+                    width: boxWidth,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF9E7),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment
+                            .center, // 👈 centres content vertically
+                        children: [
+                          const Icon(
+                            Icons.lightbulb_outline,
+                            size: 24,
+                            color: Color(0xFFD4AC0D),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Tap the 💡 in the top right for conversation prompts!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: Colors.black54),
-                        ),
-                      ],
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Message Suggestions',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Tap the 💡 in the top right for conversation prompts!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 

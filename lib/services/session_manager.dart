@@ -11,7 +11,8 @@ class SessionManager {
   }
 
   static Future<String?> getUserId() async {
-    return await _storage.read(key: _userIdKey);
+    final id = await _storage.read(key: _userIdKey);
+    return id;
   }
 
   // Check Supabase's live session
@@ -27,7 +28,8 @@ class SessionManager {
     final expiresAt = session.expiresAt; // Unix timestamp (int)
     if (expiresAt != null) {
       final expiry = DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
-      if (DateTime.now().isAfter(expiry)) {
+      final isExpired = DateTime.now().isAfter(expiry);
+      if (isExpired) {
         await clearSession();
         return false;
       }
