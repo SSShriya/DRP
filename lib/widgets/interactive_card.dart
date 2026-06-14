@@ -115,7 +115,7 @@ class InteractiveCard extends StatelessWidget {
                       const SizedBox(height: 4),
 
                       // Year group for match card
-                      if (matchCard != null) ...[
+                      if (matchCard != null && !matchCard.isCommitteeCard) ...[
                         const SizedBox(height: 2),
                         Row(
                           children: [
@@ -164,7 +164,8 @@ class InteractiveCard extends StatelessWidget {
 
                       // Location for match card
                       if (matchCard != null &&
-                          matchCard.location.isNotEmpty) ...[
+                          matchCard.location.isNotEmpty &&
+                          !matchCard.isCommitteeCard) ...[
                         const SizedBox(height: 2),
                         Row(
                           children: [
@@ -196,7 +197,8 @@ class InteractiveCard extends StatelessWidget {
 
                       // ── Subtitle ──
                       if (matchCard != null &&
-                          matchCard.interests.isNotEmpty) ...[
+                          matchCard.interests.isNotEmpty &&
+                          !matchCard.isCommitteeCard) ...[
                         const SizedBox(height: 4),
                         Text(
                           'Interests:',
@@ -242,6 +244,71 @@ class InteractiveCard extends StatelessWidget {
                                 ),
                               )
                               .toList(),
+                        ),
+                      ],
+
+                      if (matchCard != null && matchCard.isCommitteeCard) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Committee Member',
+                          style: TextStyle(
+                            fontFamily: 'Merriweather',
+                            color: Color(0xFF222222),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.group,
+                              size: 12,
+                              color: Color(0xFF222222).withValues(alpha: 0.8),
+                            ),
+
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                matchCard.societyName,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Merriweather',
+                                  color: Color(0xFF222222),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.badge,
+                              size: 12,
+                              color: Color(0xFF222222).withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                matchCard.course,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Merriweather',
+                                  color: Color(0xFF222222),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
 
