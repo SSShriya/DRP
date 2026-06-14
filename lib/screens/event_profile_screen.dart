@@ -25,7 +25,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
   EventService eventService = EventService();
   String societyName = '';
 
-  // ── NEW: committee member details ─────────────────────────────────────────
+  //  committee member details ─────────────────────────────────────────
   Map<String, dynamic>? _committeeMember;
 
   @override
@@ -39,7 +39,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
     }
   }
 
-  // ── NEW: fetch committee member row ───────────────────────────────────────
+  //  fetch committee member row ───────────────────────────────────────
   Future<void> _loadCommitteeMember() async {
     try {
       final data = await supabase
@@ -461,7 +461,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
               ),
             ),
 
-            // ── NEW: Committee meeting section ───────────────────────────
+            // Committee meeting section ───────────────────────────
             _buildCommitteeMeetingCard(),
 
             const SizedBox(height: 32),
