@@ -53,6 +53,12 @@ class _DMScreenState extends State<DMScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/textures/bg_texture.jpg'), context);
+  }
+
+  @override
   void dispose() {
     _pollingTimer?.cancel();
     _textController.dispose();
