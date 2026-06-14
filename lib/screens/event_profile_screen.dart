@@ -296,8 +296,14 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0XFF84DCC6),
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0XFF222222),
+        flexibleSpace: Opacity(
+          opacity: 0.6,
+          child: Image(
+            image: AssetImage('assets/images/yellow_gingham.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
