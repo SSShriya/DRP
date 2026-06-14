@@ -26,6 +26,8 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
   List<Map<String, dynamic>> _committee = [];
   bool _disposed = false;
 
+  final SocietyService _societyService = SocietyService();
+
   @override
   void initState() {
     super.initState();
@@ -53,7 +55,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
           .eq('id', _societyId)
           .maybeSingle();
 
-      final committeeData = await getCommittee(_societyId);
+      final committeeData = await _societyService.getCommittee(_societyId);
 
       if (_disposed || !mounted) return;
 
@@ -87,7 +89,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
     setState(() => _isLoading = true);
     try {
       // Image is already uploaded in _pickImage, just save bio here
-      await updateSocDetails(id: _societyId, bio: _aboutController.text.trim());
+      await _societyService.updateSocDetails(id: _societyId, bio: _aboutController.text.trim());
       if (_disposed) return;
       await _loadProfile();
       if (!_disposed && mounted) {
@@ -125,7 +127,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await uploadSocImage(picked, _societyId);
+      await _societyService.uploadSocImage(picked, _societyId);
       if (_disposed || !mounted) return;
 
       // Re-fetch the saved URL from DB so it displays correctly
@@ -198,7 +200,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                     final nav = Navigator.of(ctx);
 
                     try {
-                      await updateSocDetails(id: _societyId, bio: text);
+                      await _societyService.updateSocDetails(id: _societyId, bio: text);
                     } catch (e) {
                       if (mounted) _snack('Failed to update about section.');
                       return; //
@@ -273,7 +275,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                   roleController.text.isNotEmpty) {
                 final nav = Navigator.of(ctx);
                 try {
-                  await addCommitteeMember(
+                  await _societyService.addCommitteeMember(
                     societyId: _societyId,
                     name: nameController.text,
                     role: roleController.text,
@@ -294,7 +296,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
 
   Future<void> _removeMember(dynamic id) async {
     try {
-      await removeCommitteeMember(id);
+      await _societyService.removeCommitteeMember(id);
       if (_disposed) return;
       await _loadProfile();
     } catch (e) {

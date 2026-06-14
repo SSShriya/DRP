@@ -4,6 +4,7 @@ import 'package:drp/services/supabase_client.dart';
 import 'package:drp/services/event_service.dart';
 import 'package:image_picker/image_picker.dart';
 
+class SocietyService {
 // ── Profile queries ───────────────────────────────────────────────────────────
 
 Future<Map<String, dynamic>?> getSocDetails(String societyId) async {
@@ -239,4 +240,32 @@ Future<void> updateSocietyEvent({
         'committee_member_id': committeeCanMeet ? committeeMemberId : null,
       })
       .eq('event_id', eventId);
+}
+
+  Future<void> initiateSocietyChat(String societyId, String userId, String eventId) async {
+    // ── Respect the user_order check constraint (user1_id < user2_id) ──
+    final String user1;
+    final String user2;
+    if (societyId.compareTo(userId) <= 0) {
+      user1 = societyId;
+      user2 = userId;
+    } else {
+      user1 = userId;
+      user2 = societyId;
+    }
+
+    try {
+      await supabase.from('matches').insert({
+        'user1_id': user1,
+        'user2_id': user2,
+        'event_id': eventId,
+        'user1_accepted': true,
+        'user2_accepted': true,
+      });
+    } catch (e) {
+      // Row already exists — safe to ignore and proceed to chat
+      debugPrint('Match row already exists, proceeding: $e');
+    }
+  }
+
 }

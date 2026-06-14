@@ -18,6 +18,8 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
   bool _isLoading = false;
   bool _showArchived = false;
 
+  final SocietyService _societyService = SocietyService();
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +33,7 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
       _societyId = await loadUserId();
       if (_societyId.isEmpty) return;
 
-      final eventsData = await getSocietyEvents(_societyId);
+      final eventsData = await _societyService.getSocietyEvents(_societyId);
       if (!mounted) return;
 
       final today = DateTime.now();
@@ -105,7 +107,7 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
     if (result == null) return;
     setState(() => _isLoading = true);
     try {
-      final newEventId = await createSocietyEvent(
+      final newEventId = await _societyService.createSocietyEvent(
         societyId: _societyId,
         name: result.name,
         startDate: result.startDate,
@@ -197,7 +199,7 @@ class _SocietyEventsScreenState extends State<SocietyEventsScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await updateSocietyEvent(
+      await _societyService.updateSocietyEvent(
         eventId: eventId,
         societyId: _societyId,
         name: result.name,

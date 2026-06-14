@@ -5,7 +5,6 @@ import 'package:drp/screens/dm_individual_screen.dart';
 import 'package:drp/screens/event_profile_screen.dart';
 import 'package:drp/services/event_service.dart';
 import 'package:drp/services/society_service.dart';
-import 'package:drp/services/supabase_client.dart';
 import 'package:drp/services/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
@@ -39,6 +38,7 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
   final List<EventCard> _userInterestedEvents = [];
 
   final EventService eventService = EventService();
+  final SocietyService _societyService = SocietyService();
 
   @override
   void initState() {
@@ -109,10 +109,10 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
 
   Future<void> _getSocietyInfo() async {
     try {
-      final data = await getSocDetails(widget.societyId);
+      final data = await _societyService.getSocDetails(widget.societyId);
       if (data == null) return;
 
-      final committeeMembers = await getCommittee(widget.societyId);
+      final committeeMembers = await _societyService.getCommittee(widget.societyId);
 
       if (mounted) {
         setState(() {
@@ -153,32 +153,6 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
       context,
       MaterialPageRoute(builder: (context) => EventProfileScreen(card: card)),
     );
-  }
-
-  Future<void> _initiateSocietyChat() async {
-    // ── Respect the user_order check constraint (user1_id < user2_id) ──
-    final String user1;
-    final String user2;
-    if (widget.societyId.compareTo(userId) <= 0) {
-      user1 = widget.societyId;
-      user2 = userId;
-    } else {
-      user1 = userId;
-      user2 = widget.societyId;
-    }
-
-    try {
-      await supabase.from('matches').insert({
-        'user1_id': user1,
-        'user2_id': user2,
-        'event_id': widget.eventId,
-        'user1_accepted': true,
-        'user2_accepted': true,
-      });
-    } catch (e) {
-      // Row already exists — safe to ignore and proceed to chat
-      debugPrint('Match row already exists, proceeding: $e');
-    }
   }
 
   // Helper check to see if the event item collection contains our current target ID
@@ -258,7 +232,7 @@ class _SocietyInfoScreenState extends State<SocietyInfoScreen> {
                           );
                           try {
                             final navigator = Navigator.of(context);
-                            await _initiateSocietyChat();
+                            await _societyService.initiateSocietyChat(widget.societyId, userId, widget.eventId);
                             if (!mounted) return;
                             debugPrint('=== Navigating to DMScreen ===');
                             navigator.push(

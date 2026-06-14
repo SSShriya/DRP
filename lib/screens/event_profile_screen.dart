@@ -1,6 +1,7 @@
 import 'package:drp/screens/event_cancellation_popup.dart';
 import 'package:drp/screens/event_registered_popup.dart';
 import 'package:drp/screens/society_info_screen.dart';
+import 'package:drp/services/society_service.dart';
 import 'package:drp/services/supabase_client.dart';
 import 'package:drp/services/utils.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,7 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
   bool _isRegistered = false;
   EventService eventService = EventService();
   String societyName = '';
+  final SocietyService _societyService = SocietyService();
 
   //  committee member details ─────────────────────────────────────────
   Map<String, dynamic>? _committeeMember;
@@ -81,6 +83,8 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
   Future<void> _register() async {
     try {
       await registrationService.registerForEvent(widget.card.eventId);
+      final userId = await loadUserId();
+      await _societyService.initiateSocietyChat(widget.card.societyId, userId, widget.card.eventId);
       setState(() => _isRegistered = true);
       if (mounted) {
         showDialog(
