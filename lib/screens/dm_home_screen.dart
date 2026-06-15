@@ -8,6 +8,7 @@ import '../models/match_convo.dart';
 import '../services/conversation_service.dart';
 import '../services/event_service.dart';
 import '../tools/sitched_divider.dart';
+import 'dart:async';
 
 class DMOverviewScreen extends StatefulWidget {
   const DMOverviewScreen({super.key});
@@ -21,6 +22,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
   final _eventService = EventService();
   List<ChatConversation> _conversations = [];
   bool isLoading = true;
+  Timer? _pollingTimer;
 
   // For filtering events
   String? _selectedEventId;
@@ -33,7 +35,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
   @override
   void initState() {
     super.initState();
-    _loadConversations();
+    _initAndStartPolling();
   }
 
   @override
@@ -45,6 +47,7 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel(); // ← add this
     routeObserver.unsubscribe(this);
     super.dispose();
   }
@@ -57,6 +60,91 @@ class _DMOverviewScreenState extends State<DMOverviewScreen> with RouteAware {
   @override
   void didPush() {
     _loadConversations();
+  }
+
+  Future<void> _initAndStartPolling() async {
+    await _loadConversations();
+    _pollingTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _silentRefresh(),
+    );
+  }
+
+  Future<void> _silentRefresh() async {
+    if (!mounted) return;
+
+    final results = await Future.wait([
+      _conversationService.getConversations(),
+      _conversationService.getSocietyConversations(),
+    ]);
+
+    final matchConvos = results[0];
+    final societyConvos = results[1];
+
+    final existingSocietyIds = matchConvos
+        .where((c) => c.isSociety)
+        .map((c) => c.otherUserId)
+        .toSet();
+
+    final dedupedSocietyConvos = societyConvos
+        .where((c) => !existingSocietyIds.contains(c.otherUserId))
+        .toList();
+
+    final convos = [...matchConvos, ...dedupedSocietyConvos];
+
+    final eventIds = convos
+        .map((c) => c.eventId)
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    final endTimes = await _conversationService.getEventEndTimes(eventIds);
+    final myId = await loadUserId();
+
+    final Map<String, List<MapEntry<String, String>>> eventsInCommon = {};
+    final seenEventIds = <String>{};
+    final seenUsers = <String>{};
+    final filters = <MapEntry<String, String>>[];
+
+    for (final chat in convos) {
+      if (!_isChatCurrent(chat)) continue;
+
+      if (chat.eventId.isNotEmpty && seenEventIds.add(chat.eventId)) {
+        filters.add(MapEntry(chat.eventId, chat.event));
+      }
+
+      if (chat.isSociety) {
+        if (seenUsers.add(chat.otherUserId)) {
+          eventsInCommon[chat.otherUserId] = await _eventService.eventsInCommon(
+            myId,
+            chat.otherUserId,
+          );
+          if (chat.eventId.isNotEmpty &&
+              !(eventsInCommon[chat.otherUserId] ?? []).any(
+                (e) => e.key == chat.eventId,
+              )) {
+            (eventsInCommon[chat.otherUserId] ??= []).add(
+              MapEntry(chat.eventId, chat.event),
+            );
+          }
+        }
+      } else if (seenUsers.add(chat.otherUserId)) {
+        eventsInCommon[chat.otherUserId] = await _eventService.eventsInCommon(
+          myId,
+          chat.otherUserId,
+        );
+      }
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _conversations = convos;
+      _eventEndTimes = endTimes;
+      _eventFilters = filters;
+      _eventsInCommon = eventsInCommon;
+      // ← No isLoading toggle here
+    });
   }
 
   Future<void> _loadConversations() async {
