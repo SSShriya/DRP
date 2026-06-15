@@ -28,6 +28,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
   final _aboutController = TextEditingController();
   List<Map<String, dynamic>> _committee = [];
   bool _disposed = false;
+  bool _isEditingAbout = false;
 
   final SocietyService _societyService = SocietyService();
 
@@ -169,78 +170,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
     } finally {
       if (!_disposed && mounted) setState(() => _isLoading = false);
     }
-  }
-
-  // ── Edit about dialog ──────────────────────────────────────────────────────
-  void _editAbout() {
-    final tempController = TextEditingController(text: _aboutController.text);
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setDialogState) {
-            return AlertDialog(
-              title: const Text(
-                'Edit About Section',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Montserrat',
-                ),
-              ),
-              content: TextField(
-                controller: tempController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Tell others about your society...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final text = tempController.text.trim();
-                    final nav = Navigator.of(ctx);
-
-                    try {
-                      await _societyService.updateSocDetails(
-                        id: _societyId,
-                        bio: text,
-                      );
-                    } catch (e) {
-                      if (mounted) _snack('Failed to update about section.');
-                      return; //
-                    }
-
-                    if (!mounted) return;
-                    setState(() => _aboutController.text = text);
-                    nav.pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF84DCC6),
-                  ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).then((_) {
-      tempController.dispose();
-    });
   }
 
   // ── Contact toggle ─────────────────────────────────────────────────────────
@@ -647,7 +576,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                           ],
                           const SizedBox(height: 24),
 
-                          // ── About ────────────────────────────────────────────
+                          // ── About ────────────────────────────────────────────────────────────────────
                           _StitchedCard(
                             color: const Color(0x5F79C99E),
                             child: Column(
@@ -668,29 +597,118 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(
-                                        Icons.edit,
+                                      icon: Icon(
+                                        _isEditingAbout
+                                            ? Icons.save
+                                            : Icons.edit,
                                         size: 18,
-                                        color: Color(0xFF4D5359),
+                                        color: const Color(0xFF4D5359),
                                       ),
-                                      onPressed: _editAbout,
+                                      onPressed: _isLoading
+                                          ? null
+                                          : () async {
+                                              if (_isEditingAbout) {
+                                                // ── Save ──────────────────────────────────────
+                                                setState(
+                                                  () => _isLoading = true,
+                                                );
+                                                try {
+                                                  await _societyService
+                                                      .updateSocDetails(
+                                                        id: _societyId,
+                                                        bio: _aboutController
+                                                            .text
+                                                            .trim(),
+                                                      );
+                                                  if (!mounted) return;
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'About section updated!',
+                                                      ),
+                                                    ),
+                                                  );
+                                                } catch (e) {
+                                                  if (mounted)
+                                                    _snack(
+                                                      'Failed to update about section.',
+                                                    );
+                                                } finally {
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _isLoading = false;
+                                                      _isEditingAbout = false;
+                                                    });
+                                                  }
+                                                }
+                                              } else {
+                                                // ── Enter edit mode ───────────────────────────
+                                                setState(
+                                                  () => _isEditingAbout = true,
+                                                );
+                                              }
+                                            },
                                       constraints: const BoxConstraints(),
                                       padding: EdgeInsets.zero,
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
-                                  _aboutController.text.isNotEmpty
-                                      ? _aboutController.text
-                                      : 'No description provided yet. Click the edit icon to write something!',
-                                  style: const TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontSize: 14,
-                                    color: Color(0x9F4D5359),
-                                    height: 1.5,
-                                  ),
-                                ),
+
+                                // ── Toggle between read and edit ──────────────────────────────
+                                _isEditingAbout
+                                    ? TextField(
+                                        controller: _aboutController,
+                                        maxLines: 4,
+                                        style: const TextStyle(
+                                          fontFamily: 'Montserrat',
+                                          fontSize: 14,
+                                          color: Color(0xFF4D5359),
+                                          height: 1.5,
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText:
+                                              'Tell others about your society...',
+                                          hintStyle: const TextStyle(
+                                            fontFamily: 'Montserrat',
+                                            fontSize: 13,
+                                            color: Colors.grey,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFF4D5359),
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFF84DCC6),
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          contentPadding: const EdgeInsets.all(
+                                            10,
+                                          ),
+                                        ),
+                                      )
+                                    : Text(
+                                        _aboutController.text.isNotEmpty
+                                            ? _aboutController.text
+                                            : 'No description provided yet. Tap the edit icon to write something!',
+                                        style: const TextStyle(
+                                          fontFamily: 'Montserrat',
+                                          fontSize: 14,
+                                          color: Color(0x9F4D5359),
+                                          height: 1.5,
+                                        ),
+                                      ),
                               ],
                             ),
                           ),
