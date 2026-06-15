@@ -433,6 +433,8 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
                     const SizedBox(height: 8),
                     Text(
                       event.subtitle,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 15,
                         color: const Color(0xFF222222).withValues(alpha: 0.8),
