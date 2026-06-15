@@ -284,23 +284,20 @@ class _UserProfileCardState extends State<UserProfileCard> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 const SizedBox(height: 4),
                 ..._eventsInCommon.map(
-                  (interest) => Padding(
+                  (event) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '★ ',
-                          style: TextStyle(fontSize: 13, color: Colors.black),
-                        ),
+                        const Text('★ ', style: TextStyle(fontSize: 16)),
                         Expanded(
                           child: Text(
-                            interest.value,
+                            event.value,
                             style: const TextStyle(
-                              fontFamily: 'Bitter',
-                              fontSize: 13,
+                              fontSize: 16,
                               color: Colors.black,
                             ),
                           ),
