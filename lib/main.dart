@@ -132,6 +132,7 @@ class _MainAppState extends State<MainApp> {
       home: _isInitialized
           ? (_isLoggedIn ? const _AppRouter() : const SignUpScreen())
           : const Scaffold(body: Center(child: CircularProgressIndicator())),
+      themeMode: ThemeMode.light,
     );
   }
 }
