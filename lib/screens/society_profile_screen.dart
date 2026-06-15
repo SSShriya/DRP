@@ -608,7 +608,11 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                                           ? null
                                           : () async {
                                               if (_isEditingAbout) {
-                                                // ── Save ──────────────────────────────────────
+                                                final messenger =
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    );
+
                                                 setState(
                                                   () => _isLoading = true,
                                                 );
@@ -621,9 +625,7 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                                                             .trim(),
                                                       );
                                                   if (!mounted) return;
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
+                                                  messenger.showSnackBar(
                                                     const SnackBar(
                                                       content: Text(
                                                         'About section updated!',
@@ -631,10 +633,11 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                                                     ),
                                                   );
                                                 } catch (e) {
-                                                  if (mounted)
+                                                  if (mounted) {
                                                     _snack(
                                                       'Failed to update about section.',
                                                     );
+                                                  }
                                                 } finally {
                                                   if (mounted) {
                                                     setState(() {
@@ -644,7 +647,6 @@ class _SocietyProfileScreenState extends State<SocietyProfileScreen> {
                                                   }
                                                 }
                                               } else {
-                                                // ── Enter edit mode ───────────────────────────
                                                 setState(
                                                   () => _isEditingAbout = true,
                                                 );
