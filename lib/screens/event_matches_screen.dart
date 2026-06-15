@@ -16,6 +16,7 @@ import '../screens/society_info_screen.dart';
 import '../services/event_service.dart';
 import '../services/utils.dart';
 import '../services/supabase_client.dart';
+import '../tools/scalloped_clipper.dart';
 
 class EventMatchesScreen extends StatefulWidget {
   final List<EventCard> allEvents;
@@ -907,24 +908,24 @@ class _EventMatchesScreenState extends State<EventMatchesScreen> {
           // CONTENT
           Scaffold(
             backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              title: Text(
-                currentEvent.title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 25,
-                  fontFamily: 'Lora',
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+              child: ClipPath(
+                clipper: ScallopedClipper(),
+                child: AppBar(
+                  foregroundColor: const Color(0XFF222222),
+                  elevation: 0,
+
+                  flexibleSpace: Opacity(
+                    opacity: 0.6,
+                    child: Image(
+                      image: AssetImage('assets/images/yellow_gingham.png'),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  centerTitle: true,
                 ),
               ),
-              flexibleSpace: Opacity(
-                opacity: 0.6,
-                child: Image(
-                  image: AssetImage('assets/images/yellow_gingham.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              foregroundColor: const Color(0XFF222222),
-              elevation: 0,
             ),
             body: Column(
               children: [

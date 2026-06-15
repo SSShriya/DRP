@@ -3,7 +3,7 @@ import 'package:drp/tools/scalloped_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
 import '../models/match_convo.dart';
-import '../widgets/user_profile_card.dart';
+import '../screens/dm_user_profile_screen.dart';
 
 class DmChatHeader extends StatelessWidget implements PreferredSizeWidget {
   final ChatConversation chat;
@@ -38,7 +38,7 @@ class DmChatHeader extends StatelessWidget implements PreferredSizeWidget {
                         societyId: chat.matchCard.otherUserId,
                         eventId: chat.matchCard.eventId,
                       )
-                    : UserProfileCard(card: card, accepted: true),
+                    : UserProfileScreen(card: card, accepted: true),
               ),
             );
           },
@@ -54,14 +54,20 @@ class DmChatHeader extends StatelessWidget implements PreferredSizeWidget {
                     : null,
               ),
               const SizedBox(width: 12),
-              Text(chat.name),
+              Expanded(
+                child: Text(
+                  chat.name,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
             ],
           ),
         ),
         flexibleSpace: Opacity(
           opacity: 0.6,
           child: Image(
-            image: AssetImage('assets/images/teal_gingham.png'),
+            image: AssetImage('assets/images/pink_gingham.png'),
             fit: BoxFit.cover,
           ),
         ),

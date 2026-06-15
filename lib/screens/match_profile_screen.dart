@@ -6,6 +6,7 @@ import '../services/match_service.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'dm_individual_screen.dart';
 import '../models/match_convo.dart';
+import '../tools/scalloped_clipper.dart';
 
 class MatchProfileScreen extends StatefulWidget {
   final List<MatchCard> cards;
@@ -250,13 +251,21 @@ class _MatchProfileScreenState extends State<MatchProfileScreen> {
     if (_cards.isEmpty) return const SizedBox.shrink();
 
     return Scaffold(
-      appBar: AppBar(
-        foregroundColor: const Color(0XFF222222),
-        flexibleSpace: Opacity(
-          opacity: 0.6,
-          child: Image(
-            image: AssetImage('assets/images/pink_gingham.png'),
-            fit: BoxFit.cover,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+        child: ClipPath(
+          clipper: ScallopedClipper(),
+          child: AppBar(
+            foregroundColor: const Color(0XFF222222),
+            elevation: 0,
+            flexibleSpace: Opacity(
+              opacity: 0.6,
+              child: Image(
+                image: AssetImage('assets/images/pink_gingham.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            centerTitle: true,
           ),
         ),
       ),

@@ -11,6 +11,7 @@ import '../services/registration_service.dart';
 import 'package:intl/intl.dart';
 import '../services/event_service.dart';
 import '../widgets/map_preview.dart';
+import '../tools/scalloped_clipper.dart';
 
 class EventProfileScreen extends StatefulWidget {
   final EventCard card;
@@ -316,7 +317,6 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
       ),
       child: Stack(
         children: [
-          
           const Positioned.fill(child: ColoredBox(color: Color(0xFFF5F0F6))),
           // BACKGROUND IMG
           Positioned.fill(
@@ -340,13 +340,22 @@ class _EventProfileScreenState extends State<EventProfileScreen> {
           // CONTENT
           Scaffold(
             backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              foregroundColor: const Color(0XFF222222),
-              flexibleSpace: Opacity(
-                opacity: 0.6,
-                child: Image(
-                  image: AssetImage('assets/images/yellow_gingham.png'),
-                  fit: BoxFit.cover,
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+              child: ClipPath(
+                clipper: ScallopedClipper(),
+                child: AppBar(
+                  foregroundColor: const Color(0XFF222222),
+                  elevation: 0,
+
+                  flexibleSpace: Opacity(
+                    opacity: 0.6,
+                    child: Image(
+                      image: AssetImage('assets/images/yellow_gingham.png'),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  centerTitle: true,
                 ),
               ),
             ),
