@@ -45,11 +45,12 @@ class EventRegisteredPopup extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton(
               onPressed: () {
-                Navigator.pushReplacement(
+                Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const MainShell(initialIndex: 1),
                   ),
+                  (route) => false,
                 );
               },
               style: TextButton.styleFrom(
@@ -65,9 +66,10 @@ class EventRegisteredPopup extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton(
               onPressed: () {
-                Navigator.pushReplacement(
+                Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const MainShell()),
+                  (route) => false, // removes ALL previous routes
                 );
               },
               style: TextButton.styleFrom(
