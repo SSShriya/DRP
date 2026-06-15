@@ -30,7 +30,11 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  LatLng? _pickedLatLng; // null  →  no map pin attached
+  LatLng? _pickedLatLng;
+
+  // ── Validation state ──────────────────────────────────────────────────────
+  bool _dateError = false;
+  bool _timeError = false;
 
   @override
   void initState() {
@@ -61,7 +65,7 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
     super.dispose();
   }
 
-  // ── Pickers ──────────────────────────────────────────────────────────────
+  // ── Pickers ───────────────────────────────────────────────────────────────
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -82,7 +86,10 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
       ),
     );
     if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _dateError = false; // ← clear error once a value is chosen
+      });
     }
   }
 
@@ -101,11 +108,13 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
       ),
     );
     if (picked != null && picked != _selectedTime) {
-      setState(() => _selectedTime = picked);
+      setState(() {
+        _selectedTime = picked;
+        _timeError = false; // ← clear error once a value is chosen
+      });
     }
   }
 
-  /// Opens the full-screen map picker and stores the result.
   Future<void> _pickLocation() async {
     final result = await Navigator.push<LatLng>(
       context,
@@ -116,8 +125,6 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
     if (result != null) {
       setState(() {
         _pickedLatLng = result;
-        // Clear any manual text so the coords are the source of truth,
-        // but only if the field is currently empty.
         if (_locationController.text.trim().isEmpty) {
           _locationController.text =
               '${result.latitude.toStringAsFixed(5)}, '
@@ -127,19 +134,91 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
     }
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  /// Renders a picker button with an optional inline error message below it,
+  /// mirroring the look of a [TextField] validation error.
+  Widget _pickerField({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required bool hasValue,
+    required bool hasError,
+    required String errorText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onPressed,
+            icon: Icon(icon, color: hasError ? Colors.red[700] : _purple),
+            label: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Bitter',
+                  color: hasError
+                      ? Colors.red[700]
+                      : hasValue
+                      ? const Color(0xFF222222)
+                      : Colors.grey[600],
+                  fontWeight: hasValue ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              side: BorderSide(
+                // Red border when invalid, normal colours otherwise
+                color: hasError
+                    ? Colors.red[700]!
+                    : hasValue
+                    ? Colors.grey[400]!
+                    : _purple.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+        ),
+        // Inline error — only visible after a failed submit attempt
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 12),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 13, color: Colors.red[700]),
+                const SizedBox(width: 4),
+                Text(
+                  errorText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red[700],
+                    fontFamily: 'Bitter',
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final bool isFormValid = _selectedDate != null && _selectedTime != null;
-
     final String dateButtonText = _selectedDate != null
         ? DateFormat('EEEE, MMM d, yyyy').format(_selectedDate!)
-        : 'Choose Date *';
+        : 'Choose Date';
 
     final String timeButtonText = _selectedTime != null
         ? _selectedTime!.format(context)
-        : 'Choose Time *';
+        : 'Choose Time';
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -163,8 +242,7 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                         fontWeight: FontWeight.bold,
                         color: _purple,
                       ),
-                      overflow: TextOverflow
-                          .ellipsis, // optional: prevent text wrapping
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
@@ -186,38 +264,13 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                 ),
               ),
               const SizedBox(height: 6),
-              OutlinedButton.icon(
+              _pickerField(
                 onPressed: _pickDate,
-                icon: const Icon(Icons.calendar_month, color: _purple),
-                label: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    dateButtonText,
-                    style: TextStyle(
-                      color: _selectedDate != null
-                          ? const Color(0xFF222222)
-                          : Colors.grey[600],
-                      fontWeight: _selectedDate != null
-                          ? FontWeight.w500
-                          : FontWeight.normal,
-                      fontFamily: 'Bitter',
-                    ),
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  side: BorderSide(
-                    color: _selectedDate != null
-                        ? Colors.grey[400]!
-                        : _purple.withValues(alpha: 0.5),
-                  ),
-                ),
+                icon: Icons.calendar_month,
+                label: dateButtonText,
+                hasValue: _selectedDate != null,
+                hasError: _dateError,
+                errorText: 'Please select a date.',
               ),
               const SizedBox(height: 16),
 
@@ -231,38 +284,13 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                 ),
               ),
               const SizedBox(height: 6),
-              OutlinedButton.icon(
+              _pickerField(
                 onPressed: _pickTime,
-                icon: const Icon(Icons.access_time_filled, color: _purple),
-                label: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    timeButtonText,
-                    style: TextStyle(
-                      fontFamily: 'Bitter',
-                      color: _selectedTime != null
-                          ? const Color(0xFF222222)
-                          : Colors.grey[600],
-                      fontWeight: _selectedTime != null
-                          ? FontWeight.w500
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  side: BorderSide(
-                    color: _selectedTime != null
-                        ? Colors.grey[400]!
-                        : _purple.withValues(alpha: 0.5),
-                  ),
-                ),
+                icon: Icons.access_time_filled,
+                label: timeButtonText,
+                hasValue: _selectedTime != null,
+                hasError: _timeError,
+                errorText: 'Please select a time.',
               ),
               const SizedBox(height: 16),
 
@@ -276,8 +304,6 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                 ),
               ),
               const SizedBox(height: 6),
-
-              // Text field
               TextField(
                 controller: _locationController,
                 decoration: InputDecoration(
@@ -291,7 +317,6 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                         ? const Color(0xFF84DCC6)
                         : _purple,
                   ),
-                  // Clear-pin button appears once a pin is attached
                   suffixIcon: _pickedLatLng != null
                       ? IconButton(
                           icon: const Icon(Icons.close, size: 18),
@@ -306,8 +331,6 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // "Pick on Map" button — sits directly below the text field
               OutlinedButton.icon(
                 onPressed: _pickLocation,
                 icon: Icon(
@@ -342,59 +365,50 @@ class _DMMeetingPopupState extends State<DMMeetingPopup> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
 
               // ── Confirm ───────────────────────────────────────────────────
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isFormValid ? _purple : Colors.grey[300],
-                  foregroundColor: isFormValid
-                      ? Colors.white
-                      : Colors.grey[600],
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _purple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 2,
                   ),
-                  elevation: isFormValid ? 2 : 0,
-                ),
-                onPressed: () {
-                  if (!isFormValid) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.white),
-                            SizedBox(width: 10),
-                            Text(
-                              'Please select both a Date and Time to continue.',
-                            ),
-                          ],
-                        ),
-                        backgroundColor: Colors.red[700],
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                    return;
-                  }
+                  onPressed: () {
+                    // Mark whichever fields are still empty
+                    final dateInvalid = _selectedDate == null;
+                    final timeInvalid = _selectedTime == null;
 
-                  Navigator.pop(context, {
-                    'date': DateFormat('yyyy-MM-dd').format(_selectedDate!),
-                    'time': _selectedTime!.format(context),
-                    'location': _locationController.text.trim(),
-                    // null when no pin was placed — buildInvitePayload handles this
-                    'lat': _pickedLatLng?.latitude,
-                    'lng': _pickedLatLng?.longitude,
-                  });
-                },
-                child: Text(
-                  widget.initialDate != null
-                      ? 'Update Invitation'
-                      : 'Send Invitation',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    if (dateInvalid || timeInvalid) {
+                      setState(() {
+                        _dateError = dateInvalid;
+                        _timeError = timeInvalid;
+                      });
+                      return; // stop here — errors are now shown inline
+                    }
+
+                    Navigator.pop(context, {
+                      'date': DateFormat('yyyy-MM-dd').format(_selectedDate!),
+                      'time': _selectedTime!.format(context),
+                      'location': _locationController.text.trim(),
+                      'lat': _pickedLatLng?.latitude,
+                      'lng': _pickedLatLng?.longitude,
+                    });
+                  },
+                  child: Text(
+                    widget.initialDate != null
+                        ? 'Update Invitation'
+                        : 'Send Invitation',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
