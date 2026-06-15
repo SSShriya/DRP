@@ -132,6 +132,20 @@ class _MainAppState extends State<MainApp> {
       home: _isInitialized
           ? (_isLoggedIn ? const _AppRouter() : const SignUpScreen())
           : const Scaffold(body: Center(child: CircularProgressIndicator())),
+      theme: ThemeData(
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF84DCC6),
+          brightness: Brightness.light,
+        ),
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.light, // intentionally light
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF84DCC6),
+          brightness: Brightness.light,
+        ),
+      ),
       themeMode: ThemeMode.light,
     );
   }
