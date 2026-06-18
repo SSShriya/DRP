@@ -65,14 +65,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
-  bulleted_list:
-    dependency: "direct main"
-    description:
-      name: bulleted_list
-      sha256: "35ddc56b7fd9977ae3932264f5b722e702748a044aa16f0a7109bf7e4886fedb"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.1+0.1a"
   characters:
     dependency: transitive
     description:
@@ -600,14 +592,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  nested:
-    dependency: transitive
-    description:
-      name: nested
-      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   objective_c:
     dependency: transitive
     description:
@@ -736,14 +720,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  provider:
-    dependency: "direct main"
-    description:
-      name: provider
-      sha256: "4e82183fa20e5ca25703ead7e05de9e4cceed1fbd1eadc1ac3cb6f565a09f272"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.5+1"
   pub_semver:
     dependency: transitive
     description:
