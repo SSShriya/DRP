@@ -1,3 +1,3 @@
-# drp
+# Patchwork
 
-A new Flutter project.
+A social application for London universities focused on motivating students to attend society events by connecting them with others attending the same events.
